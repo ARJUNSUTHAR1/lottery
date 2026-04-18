@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+:root {
+  --background: #090114;
+  --foreground: #f9f9ff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #090114;
+    --foreground: #f9f9ff;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.royal-surface {
+  position: relative;
+  background:
+    radial-gradient(circle at top, rgba(246, 185, 82, 0.08), transparent 32%),
+    linear-gradient(180deg, rgba(37, 8, 14, 0.96), rgba(18, 4, 12, 0.98));
+}
+
+.royal-grid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.2;
+  background-image:
+    radial-gradient(circle, rgba(247, 197, 104, 0.24) 1px, transparent 1.2px),
+    linear-gradient(rgba(214, 165, 79, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(214, 165, 79, 0.08) 1px, transparent 1px);
+  background-size: 18px 18px, 72px 72px, 72px 72px;
+  background-position: 0 0, 0 0, 0 0;
+  mask-image: radial-gradient(circle at center, black 35%, transparent 100%);
+}
+
+.royal-frame {
+  position: relative;
+}
+
+.royal-frame::before,
+.royal-frame::after {
+  content: none;
+}
+
+.royal-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.royal-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.14;
+  background-image:
+    linear-gradient(rgba(255, 203, 112, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 203, 112, 0.08) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+.royal-panel-strong::after {
+  content: none;
+}
+
+.royal-corner {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  border-color: rgba(243, 194, 102, 0.96);
+  pointer-events: none;
+  z-index: 20;
+  filter: drop-shadow(0 0 6px rgba(255, 185, 74, 0.18));
+}
+
+.royal-corner::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-color: rgba(255, 222, 154, 0.64);
+}
+
+.royal-corner,
+.royal-corner::before {
+  border-style: solid;
+}
+
+.royal-corner-tl,
+.royal-corner-tl::before {
+  border-width: 2px 0 0 2px;
+  border-top-left-radius: 20px;
+}
+
+.royal-corner-tr,
+.royal-corner-tr::before {
+  border-width: 2px 2px 0 0;
+  border-top-right-radius: 20px;
+}
+
+.royal-corner-bl,
+.royal-corner-bl::before {
+  border-width: 0 0 2px 2px;
+  border-bottom-left-radius: 20px;
+}
+
+.royal-corner-br,
+.royal-corner-br::before {
+  border-width: 0 2px 2px 0;
+  border-bottom-right-radius: 20px;
+}
+
+.royal-knot {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  transform: rotate(45deg);
+  border: 1px solid rgba(226, 175, 90, 0.55);
+  background:
+    radial-gradient(circle at center, rgba(255, 196, 95, 0.5), rgba(115, 34, 17, 0.2));
+  box-shadow: 0 0 12px rgba(255, 177, 66, 0.18);
+  pointer-events: none;
+  z-index: 20;
+}
