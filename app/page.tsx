@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 
 type Language = "en" | "hi";
@@ -277,8 +277,43 @@ function PanelCorners() {
   );
 }
 
+function SidebarContent({ currentCopy }: { currentCopy: CopyPack }) {
+  return (
+    <>
+      <div className="rounded-[28px] border border-orange-300/15 bg-gradient-to-b from-[#2b0a11] to-[#1a0817] p-3.5">
+        <p className="text-xs uppercase tracking-[0.18em] text-zinc-400">
+          {currentCopy.sidebarTitle}
+        </p>
+        <p className="mt-2 text-[2.1rem] leading-none font-bold text-amber-300">
+          {currentCopy.sidebarBalance}
+        </p>
+        <button className="mt-4 w-full rounded-[20px] bg-gradient-to-r from-orange-500 to-amber-300 px-4 py-3 text-sm font-semibold text-[#381200] transition hover:scale-[1.02]">
+          {currentCopy.sidebarAction}
+        </button>
+      </div>
+
+      <div className="mt-5 space-y-3 pb-10">
+        {currentCopy.menu.map((item, index) => (
+          <motion.button
+            key={item}
+            whileHover={{ x: 4 }}
+            className={`w-full rounded-[20px] px-4 py-2.5 text-left text-[15px] transition ${
+              index === 0
+                ? "bg-gradient-to-r from-orange-500 to-red-500 text-white"
+                : "bg-white/[0.04] text-zinc-300 hover:text-white"
+            }`}
+          >
+            {item}
+          </motion.button>
+        ))}
+      </div>
+    </>
+  );
+}
+
 export default function Home() {
   const [language, setLanguage] = useState<Language>("en");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const currentCopy = copy[language];
   const [nextDraw, setNextDraw] = useState<Date>(() => getNextDrawTime(new Date()));
   const [remainingTime, setRemainingTime] = useState(0);
@@ -327,6 +362,18 @@ export default function Home() {
         <div className="flex h-full flex-col bg-[#17060d]/90 backdrop-blur-xl">
           <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 bg-[#17060d]/95 px-12 py-6 backdrop-blur-xl md:px-14">
             <div className="flex items-center gap-6">
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(true)}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/20 lg:hidden"
+                aria-label="Open sidebar menu"
+              >
+                <span className="flex w-5 flex-col gap-1.5">
+                  <span className="h-0.5 w-full rounded-full bg-white" />
+                  <span className="h-0.5 w-full rounded-full bg-white" />
+                  <span className="h-0.5 w-full rounded-full bg-white" />
+                </span>
+              </button>
               <p className="text-lg font-semibold uppercase tracking-[0.18em] text-amber-300">
                 {currentCopy.heroTitle}
               </p>
@@ -367,35 +414,47 @@ export default function Home() {
             </div>
           </header>
 
+          <AnimatePresence>
+            {mobileMenuOpen ? (
+              <>
+                <motion.button
+                  type="button"
+                  aria-label="Close sidebar menu"
+                  className="absolute inset-0 z-30 bg-black/55 lg:hidden"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setMobileMenuOpen(false)}
+                />
+                <motion.aside
+                  initial={{ x: -320, opacity: 0.6 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: -320, opacity: 0.6 }}
+                  transition={{ duration: 0.22, ease: "easeOut" }}
+                  className="hide-scrollbar absolute left-0 top-0 z-40 h-full w-[280px] overflow-y-auto border-r border-white/10 bg-[#12040b]/95 px-5 pb-24 pt-6 shadow-2xl lg:hidden"
+                >
+                  <div className="mb-5 flex items-center justify-between">
+                    <p className="text-base font-semibold uppercase tracking-[0.18em] text-amber-300">
+                      {currentCopy.heroTitle}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/20 text-xl text-white"
+                      aria-label="Close sidebar menu"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <SidebarContent currentCopy={currentCopy} />
+                </motion.aside>
+              </>
+            ) : null}
+          </AnimatePresence>
+
           <div className="grid min-h-0 flex-1 items-start px-4 pb-4 md:px-5 md:pb-5 lg:grid-cols-[210px_minmax(0,1fr)] lg:px-6 lg:pb-6">
             <aside className="hide-scrollbar hidden h-full overflow-y-auto border-r border-white/10 bg-[#12040b]/80 px-5 pb-28 pt-8 lg:block">
-              <div className="rounded-[28px] border border-orange-300/15 bg-gradient-to-b from-[#2b0a11] to-[#1a0817] p-3.5">
-                <p className="text-xs uppercase tracking-[0.18em] text-zinc-400">
-                  {currentCopy.sidebarTitle}
-                </p>
-                <p className="mt-2 text-[2.1rem] leading-none font-bold text-amber-300">
-                  {currentCopy.sidebarBalance}
-                </p>
-                <button className="mt-4 w-full rounded-[20px] bg-gradient-to-r from-orange-500 to-amber-300 px-4 py-3 text-sm font-semibold text-[#381200] transition hover:scale-[1.02]">
-                  {currentCopy.sidebarAction}
-                </button>
-              </div>
-
-              <div className="mt-5 space-y-3 pb-10">
-                {currentCopy.menu.map((item, index) => (
-                  <motion.button
-                    key={item}
-                    whileHover={{ x: 4 }}
-                    className={`w-full rounded-[20px] px-4 py-2.5 text-left text-[15px] transition ${
-                      index === 0
-                        ? "bg-gradient-to-r from-orange-500 to-red-500 text-white"
-                        : "bg-white/[0.04] text-zinc-300 hover:text-white"
-                    }`}
-                  >
-                    {item}
-                  </motion.button>
-                ))}
-              </div>
+              <SidebarContent currentCopy={currentCopy} />
             </aside>
 
             <section className="hide-scrollbar h-full overflow-y-auto p-5 md:p-7">
