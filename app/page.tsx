@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Language = "en" | "hi";
 
@@ -28,6 +28,13 @@ type ResultRow = {
   result: string;
 };
 
+type Testimonial = {
+  name: string;
+  location: string;
+  quote: string;
+  tag: string;
+};
+
 type CopyPack = {
   navItems: string[];
   badge: string;
@@ -38,19 +45,20 @@ type CopyPack = {
   secondaryCta: string;
   signIn: string;
   register: string;
-  sidebarTitle: string;
-  sidebarBalance: string;
-  sidebarAction: string;
   popularTitle: string;
   categoriesTitle: string;
   liveResultsTitle: string;
   countdownTitle: string;
   nextDrawAt: string;
-  previewTitle: string;
-  previewDescription: string;
   footerTitle: string;
   footerDescription: string;
   footerButton: string;
+  buyTicket: string;
+  testimonialTitle: string;
+  testimonialLabel: string;
+  testimonialHelper: string;
+  statsTitle: string;
+  testimonials: Testimonial[];
   hrs: string;
   mins: string;
   secs: string;
@@ -73,21 +81,42 @@ const copy: Record<Language, CopyPack> = {
     secondaryCta: "Check Live Results",
     signIn: "Sign In",
     register: "Register",
-    sidebarTitle: "Wallet Balance",
-    sidebarBalance: "INR 5,000",
-    sidebarAction: "Add Money via UPI",
     popularTitle: "Popular Draws Today",
     categoriesTitle: "Explore Categories",
     liveResultsTitle: "Live Result Board",
     countdownTitle: "Next Mega Draw",
     nextDrawAt: "Next draw at",
-    previewTitle: "Platform Preview",
-    previewDescription:
-      "Browse featured lottery screens, current jackpots, and result-focused layouts built for a modern Indian audience.",
     footerTitle: "Fast UPI checkout and live lottery results",
-    footerDescription:
-      "Built for Kerala, Nagaland, Sikkim, and other Indian lottery users with Hindi-English support and a smooth mobile-friendly flow.",
+    footerDescription: "",
     footerButton: "Create Account",
+    buyTicket: "Buy Ticket",
+    testimonialTitle: "Real wins, real stories",
+    testimonialLabel: "Trusted players",
+    testimonialHelper: "Fresh stories from verified ticket buyers across India.",
+    statsTitle: "Platform pulse",
+    testimonials: [
+      {
+        name: "Priya",
+        location: "Kochi",
+        quote:
+          "Booking was smooth and the draw timing felt clear. I love how the winner artwork builds trust before I tap buy.",
+        tag: "Verified",
+      },
+      {
+        name: "Rahul",
+        location: "Lucknow",
+        quote:
+          "The layout feels calm and readable. Small fonts on mobile still look crisp, and the countdown keeps me excited.",
+        tag: "5★ rated",
+      },
+      {
+        name: "Sneha",
+        location: "Surat",
+        quote:
+          "The testimonial section feels festive without being loud. It is the kind of polish I expect from a premium app.",
+        tag: "Happy buyer",
+      },
+    ],
     hrs: "Hrs",
     mins: "Min",
     secs: "Sec",
@@ -98,10 +127,13 @@ const copy: Record<Language, CopyPack> = {
       { label: "Tickets Today", value: 326000, suffix: "+" },
     ],
     tickets: [
-      { name: "Kerala Bumper", prize: "INR 12 Cr", time: "Today 3:00 PM" },
-      { name: "Nagaland Dear", prize: "INR 1 Cr", time: "Today 8:00 PM" },
-      { name: "Kuber Gold", prize: "INR 3.2 Cr", time: "Tonight 9:00 PM" },
-      { name: "Dhan Varsha", prize: "INR 85 Lakh", time: "Sunday 8:30 PM" },
+      { name: "Kuber Ratna", prize: "INR 25 Cr", time: "Tonight 9:00 PM" },
+      { name: "Shri Samridhi", prize: "INR 12 Cr", time: "Today 7:30 PM" },
+      { name: "Riddhi Siddhi", prize: "INR 8 Cr", time: "Today 8:15 PM" },
+      { name: "Dhan Laxmi Special", prize: "INR 5 Cr", time: "Tomorrow 1:00 PM" },
+      { name: "Jai Mata Di Draw", prize: "INR 1.2 Cr", time: "Tomorrow 4:30 PM" },
+      { name: "Vaibhav Laxmi", prize: "INR 2.75 Cr", time: "Friday 8:45 PM" },
+      { name: "Sone Ki Baarish", prize: "INR 4.5 Cr", time: "Sunday 9:30 PM" },
     ],
     categories: [
       { title: "Bumper Draws", subtitle: "High prize pools" },
@@ -111,10 +143,10 @@ const copy: Record<Language, CopyPack> = {
       { title: "Refer & Earn", subtitle: "Bonus rewards" },
     ],
     resultRows: [
-      { name: "Dear Morning", result: "49L 27278" },
-      { name: "Dear Evening", result: "15K 10342" },
-      { name: "Subhlaxmi Gold", result: "07M 44129" },
-      { name: "Dhan Varsha", result: "82R 55104" },
+      { name: "Kuber Ratna", result: "49L 27278" },
+      { name: "Shri Samridhi", result: "15K 10342" },
+      { name: "Riddhi Siddhi", result: "07M 44129" },
+      { name: "Dhan Laxmi Special", result: "82R 55104" },
     ],
   },
   hi: {
@@ -128,21 +160,43 @@ const copy: Record<Language, CopyPack> = {
     secondaryCta: "लाइव रिजल्ट देखें",
     signIn: "साइन इन",
     register: "रजिस्टर",
-    sidebarTitle: "वॉलेट बैलेंस",
-    sidebarBalance: "INR 5,000",
-    sidebarAction: "UPI से पैसा जोड़ें",
     popularTitle: "आज के लोकप्रिय ड्रॉ",
     categoriesTitle: "कैटेगरी एक्सप्लोर करें",
     liveResultsTitle: "लाइव रिजल्ट बोर्ड",
     countdownTitle: "अगला मेगा ड्रॉ",
     nextDrawAt: "अगला ड्रॉ",
-    previewTitle: "प्लेटफॉर्म प्रीव्यू",
-    previewDescription:
-      "फीचर्ड लॉटरी स्क्रीन, मौजूदा जैकपॉट और रिजल्ट-केंद्रित लेआउट एक साफ और आधुनिक रूप में देखें।",
     footerTitle: "तेज UPI चेकआउट और लाइव लॉटरी रिजल्ट",
     footerDescription:
-      "केरल, नागालैंड, सिक्किम और भारतीय लॉटरी यूजर्स के लिए हिंदी-अंग्रेजी सपोर्ट और आसान मोबाइल अनुभव के साथ बनाया गया।",
+      "UPI से सेकंड्स में पेमेंट करें और ड्रॉ, टिकट, रिजल्ट सब एक ही जगह साफ़ तरीके से देखें।",
     footerButton: "अकाउंट बनाएं",
+    buyTicket: "टिकट खरीदें",
+    testimonialTitle: "असली जीत, असली कहानियां",
+    testimonialLabel: "भरोसेमंद खिलाड़ी",
+    testimonialHelper: "भारत भर के वेरिफाइड खरीदारों की ताज़ा प्रतिक्रियाएं।",
+    statsTitle: "लाइव आंकड़े",
+    testimonials: [
+      {
+        name: "प्रिया",
+        location: "कोच्चि",
+        quote:
+          "बुकिंग आसान थी और ड्रॉ टाइम साफ दिखा। विनर आर्ट देखकर भरोसा बनता है।",
+        tag: "वेरिफाइड",
+      },
+      {
+        name: "राहुल",
+        location: "लखनऊ",
+        quote:
+          "लेआउट शांत और पढ़ने में आसान है। मोबाइल पर छोटे फॉन्ट भी साफ दिखते हैं।",
+        tag: "5★",
+      },
+      {
+        name: "स्नेहा",
+        location: "सूरत",
+        quote:
+          "टेस्टिमोनियल सेक्शन उत्सव जैसा लगता है। ज़्यादा शोर के बिना प्रीमियम फील।",
+        tag: "खुश खरीदार",
+      },
+    ],
     hrs: "घंटे",
     mins: "मिनट",
     secs: "सेकंड",
@@ -153,10 +207,13 @@ const copy: Record<Language, CopyPack> = {
       { label: "आज के टिकट", value: 326000, suffix: "+" },
     ],
     tickets: [
-      { name: "केरल बंपर", prize: "INR 12 Cr", time: "आज 3:00 बजे" },
-      { name: "नागालैंड डियर", prize: "INR 1 Cr", time: "आज 8:00 बजे" },
-      { name: "कुबेर गोल्ड", prize: "INR 3.2 Cr", time: "आज रात 9:00 बजे" },
-      { name: "धन वर्षा", prize: "INR 85 Lakh", time: "रविवार 8:30 बजे" },
+      { name: "कुबेर रत्न", prize: "INR 25 Cr", time: "आज रात 9:00 बजे" },
+      { name: "श्री समृद्धि", prize: "INR 12 Cr", time: "आज 7:30 बजे" },
+      { name: "रिद्धि सिद्धि", prize: "INR 8 Cr", time: "आज 8:15 बजे" },
+      { name: "धन लक्ष्मी स्पेशल", prize: "INR 5 Cr", time: "कल 1:00 बजे" },
+      { name: "जय माता दी ड्रॉ", prize: "INR 1.2 Cr", time: "कल 4:30 बजे" },
+      { name: "वैभव लक्ष्मी", prize: "INR 2.75 Cr", time: "शुक्रवार 8:45 बजे" },
+      { name: "सोने की बारिश", prize: "INR 4.5 Cr", time: "रविवार 9:30 बजे" },
     ],
     categories: [
       { title: "बंपर ड्रॉ", subtitle: "बड़े प्राइज पूल" },
@@ -166,10 +223,10 @@ const copy: Record<Language, CopyPack> = {
       { title: "रेफर एंड अर्न", subtitle: "बोनस रिवॉर्ड" },
     ],
     resultRows: [
-      { name: "डियर मॉर्निंग", result: "49L 27278" },
-      { name: "डियर इवनिंग", result: "15K 10342" },
-      { name: "शुभलक्ष्मी गोल्ड", result: "07M 44129" },
-      { name: "धन वर्षा", result: "82R 55104" },
+      { name: "कुबेर रत्न", result: "49L 27278" },
+      { name: "श्री समृद्धि", result: "15K 10342" },
+      { name: "रिद्धि सिद्धि", result: "07M 44129" },
+      { name: "धन लक्ष्मी स्पेशल", result: "82R 55104" },
     ],
   },
 };
@@ -200,7 +257,7 @@ function formatDrawTime(date: Date): string {
   }).format(date);
 }
 
-function Counter({ label, value, suffix }: Stat) {
+function Counter({ label, value, suffix, compact }: Stat & { compact?: boolean }) {
   const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
@@ -221,6 +278,21 @@ function Counter({ label, value, suffix }: Stat) {
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [value]);
+
+  if (compact) {
+    return (
+      <motion.article
+        whileHover={{ y: -2, boxShadow: "0 0 18px rgba(251, 191, 36, 0.12)" }}
+        className="rounded-xl border border-white/10 bg-[#1b0b1d]/95 px-3 py-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]"
+      >
+        <p className="text-base font-bold tabular-nums leading-none text-amber-300 sm:text-lg">
+          {displayValue.toLocaleString("en-IN")}
+          {suffix}
+        </p>
+        <p className="mt-1 text-[10px] leading-snug text-zinc-400 sm:text-[11px]">{label}</p>
+      </motion.article>
+    );
+  }
 
   return (
     <motion.article
@@ -244,6 +316,188 @@ function TimeBox({ value, label }: { value: string; label: string }) {
         {label}
       </span>
     </div>
+  );
+}
+
+function RightInsightColumn({
+  currentCopy,
+  countdown,
+  nextDraw,
+}: {
+  currentCopy: CopyPack;
+  countdown: { hours: string; minutes: string; seconds: string };
+  nextDraw: Date;
+}) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const testimonialCanvasRef = useRef<HTMLCanvasElement>(null);
+  const skipInitialConfetti = useRef(true);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setActiveIndex((i) => (i + 1) % currentCopy.testimonials.length);
+    }, 4200);
+    return () => window.clearInterval(id);
+  }, [currentCopy.testimonials.length]);
+
+  useEffect(() => {
+    if (skipInitialConfetti.current) {
+      skipInitialConfetti.current = false;
+      return;
+    }
+    const canvas = testimonialCanvasRef.current;
+    if (!canvas) return;
+
+    let cancelled = false;
+    void import("canvas-confetti").then(({ default: confetti }) => {
+      if (cancelled) return;
+      const fire = confetti.create(canvas, { resize: true, useWorker: true });
+      const colors = [
+        "#fffbeb",
+        "#fef3c7",
+        "#fde68a",
+        "#fcd34d",
+        "#fbbf24",
+        "#f59e0b",
+        "#d97706",
+        "#b45309",
+      ];
+
+      fire({
+        particleCount: 52,
+        spread: 56,
+        startVelocity: 28,
+        ticks: 100,
+        gravity: 0.92,
+        scalar: 0.85,
+        origin: { x: 0.5, y: 0.48 },
+        colors,
+      });
+      fire({
+        particleCount: 32,
+        spread: 118,
+        startVelocity: 38,
+        ticks: 125,
+        gravity: 0.78,
+        scalar: 0.52,
+        origin: { x: 0.5, y: 0.4 },
+        colors,
+        shapes: ["circle"],
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeIndex]);
+
+  const active = currentCopy.testimonials[activeIndex];
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className="royal-panel flex w-full min-w-0 flex-col gap-3 rounded-[24px] border border-white/10 bg-[#140912] p-4 sm:gap-3.5 sm:rounded-[28px] sm:p-4"
+    >
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-amber-300/15 bg-[radial-gradient(circle_at_top,rgba(255,191,36,0.08),transparent_50%),#1a0f14]">
+        <Image
+          src="/winnerticket.png"
+          alt="Winner ticket"
+          fill
+          priority
+          sizes="(max-width: 1279px) 100vw, 320px"
+          className="object-contain p-3 sm:p-3.5"
+        />
+      </div>
+
+      <div className="relative flex w-full flex-col gap-3 overflow-hidden rounded-2xl border border-amber-300/12 bg-[#0c0812] px-3 py-3.5 sm:px-4 sm:py-4">
+        <canvas
+          ref={testimonialCanvasRef}
+          className="pointer-events-none absolute inset-0 z-[2] h-full w-full"
+          aria-hidden
+        />
+
+        <div className="relative z-[5] flex flex-col gap-3">
+          <div>
+            <p className="text-[9px] uppercase tracking-[0.18em] text-zinc-500 sm:text-[10px]">
+              {currentCopy.testimonialLabel}
+            </p>
+            <h3 className="mt-1 text-sm font-semibold leading-snug text-white sm:text-base">
+              {currentCopy.testimonialTitle}
+            </h3>
+            <p className="mt-1.5 text-[10px] leading-relaxed text-zinc-500 sm:text-[11px]">
+              {currentCopy.testimonialHelper}
+            </p>
+          </div>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={active.name}
+              initial={{ opacity: 0, y: 8, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.98 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-col rounded-xl border border-white/8 bg-black/30 p-2.5 sm:p-3.5"
+            >
+              <div className="flex items-start gap-2">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-orange-500 text-[11px] font-bold text-[#301000] sm:h-9 sm:w-9 sm:text-xs">
+                  {active.name.slice(0, 1)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-semibold text-white sm:text-xs">{active.name}</p>
+                  <p className="text-[10px] text-zinc-500 sm:text-[11px]">{active.location}</p>
+                </div>
+                <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-medium text-zinc-200 sm:text-[10px]">
+                  {active.tag}
+                </span>
+              </div>
+              <p className="mt-3 text-[11px] leading-relaxed text-zinc-300 sm:text-xs sm:leading-relaxed">
+                "{active.quote}"
+              </p>
+            </motion.div>
+          </AnimatePresence>
+
+          <div className="flex justify-center gap-1.5 pt-0.5">
+            {currentCopy.testimonials.map((item, index) => (
+              <button
+                key={item.name}
+                type="button"
+                onClick={() => setActiveIndex(index)}
+                className={`h-1.5 rounded-full transition sm:h-2 ${
+                  index === activeIndex ? "w-5 bg-amber-300 sm:w-6" : "w-1.5 bg-white/25 hover:bg-white/40"
+                }`}
+                aria-label={`Show testimonial ${index + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <p className="text-[9px] uppercase tracking-[0.16em] text-zinc-500 sm:text-[10px]">
+          {currentCopy.statsTitle}
+        </p>
+        <div className="flex flex-col gap-2">
+          {currentCopy.stats.map((item) => (
+            <Counter key={item.label} {...item} compact />
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-cyan-300/10 bg-[#0f1626] px-3 py-3.5 sm:px-4 sm:py-4">
+        <p className="text-[10px] uppercase tracking-[0.14em] text-cyan-200/80 sm:text-xs">
+          {currentCopy.countdownTitle}
+        </p>
+        <div className="mt-2 flex gap-1.5 sm:gap-2">
+          <TimeBox value={countdown.hours} label={currentCopy.hrs} />
+          <TimeBox value={countdown.minutes} label={currentCopy.mins} />
+          <TimeBox value={countdown.seconds} label={currentCopy.secs} />
+        </div>
+        <p className="mt-2 text-[10px] text-zinc-400 sm:text-xs">
+          {currentCopy.nextDrawAt} {formatDrawTime(nextDraw)}
+        </p>
+      </div>
+    </motion.section>
   );
 }
 
@@ -280,23 +534,12 @@ function PanelCorners() {
 function SidebarContent({ currentCopy }: { currentCopy: CopyPack }) {
   return (
     <>
-      <div className="rounded-[28px] border border-orange-300/15 bg-gradient-to-b from-[#2b0a11] to-[#1a0817] p-3.5">
-        <p className="text-xs uppercase tracking-[0.18em] text-zinc-400">
-          {currentCopy.sidebarTitle}
-        </p>
-        <p className="mt-2 text-[2.1rem] leading-none font-bold text-amber-300">
-          {currentCopy.sidebarBalance}
-        </p>
-        <button className="mt-4 w-full rounded-[20px] bg-gradient-to-r from-orange-500 to-amber-300 px-4 py-3 text-sm font-semibold text-[#381200] transition hover:scale-[1.02]">
-          {currentCopy.sidebarAction}
-        </button>
-      </div>
-
-      <div className="mt-5 space-y-3 pb-10">
+      <div className="space-y-3 pb-10">
         {currentCopy.menu.map((item, index) => (
           <motion.button
             key={item}
             whileHover={{ x: 4 }}
+            transition={{ duration: 0.12, ease: "easeOut" }}
             className={`w-full rounded-[20px] px-4 py-2.5 text-left text-[15px] transition ${
               index === 0
                 ? "bg-gradient-to-r from-orange-500 to-red-500 text-white"
@@ -458,196 +701,181 @@ export default function Home() {
             </aside>
 
             <section className="hide-scrollbar h-full overflow-y-auto p-5 md:p-7">
-              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_290px]">
-                <motion.section
-                  initial={{ opacity: 0, y: 24 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35, ease: "easeOut" }}
-                  className="royal-panel royal-panel-strong relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-r from-[#5d0f13] via-[#8d1b18] to-[#d27a12] p-6"
-                >
-                  <PanelCorners />
-                  <div className="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_center,rgba(255,221,128,0.35),transparent_70%)] md:block" />
-                  <div className="relative flex flex-col items-center gap-6">
-                    <div className="relative mx-auto w-full max-w-[300px] sm:max-w-[380px] lg:max-w-[460px]">
-                      <div className="absolute inset-x-6 bottom-4 h-24 rounded-full bg-amber-300/35 blur-2xl sm:inset-x-10 sm:bottom-5" />
-                      <div className="royal-panel royal-panel-strong relative overflow-hidden rounded-[30px] border border-amber-200/38 bg-[#1b0b10]/65 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:p-4">
-                        <PanelCorners />
-                        <div className="relative aspect-[4/5] overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_top,rgba(255,213,128,0.15),transparent_55%),linear-gradient(180deg,#321016,#1a090c)]">
-                          <Image
-                            src="/goddesslaxmi.png"
-                            alt="Goddess Laxmi illustration"
-                            fill
-                            priority
-                            sizes="(max-width: 640px) 300px, (max-width: 1024px) 380px, 460px"
-                            className="object-cover object-center scale-[1.06] drop-shadow-[0_0_24px_rgba(255,196,95,0.28)]"
-                          />
-                          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_58%,rgba(20,6,12,0.2)_84%,rgba(20,6,12,0.42)_100%)]" />
+              <div className="grid gap-3 sm:gap-4 xl:grid-cols-[minmax(0,1.2fr)_290px] xl:items-start">
+                <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
+                  <motion.section
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                    className="royal-panel royal-panel-strong relative w-full overflow-hidden rounded-[24px] border border-white/10 bg-gradient-to-r from-[#5d0f13] via-[#8d1b18] to-[#d27a12] px-5 pb-3 pt-5 sm:rounded-[28px] sm:px-6 sm:pt-6"
+                  >
+                    <PanelCorners />
+                    <div className="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_center,rgba(255,221,128,0.35),transparent_70%)] md:block" />
+                    <div className="relative flex w-full flex-col items-center gap-4">
+                      <div className="relative mx-auto w-full max-w-[300px] sm:max-w-[380px] lg:max-w-[460px]">
+                        <div className="absolute inset-x-6 bottom-4 h-24 rounded-full bg-amber-300/35 blur-2xl sm:inset-x-10 sm:bottom-5" />
+                        <div className="royal-panel royal-panel-strong relative overflow-hidden rounded-[30px] border border-amber-200/38 bg-[#1b0b10]/65 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:p-4">
+                          <PanelCorners />
+                          <div className="relative aspect-[4/5] overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_top,rgba(255,213,128,0.15),transparent_55%),linear-gradient(180deg,#321016,#1a090c)]">
+                            <Image
+                              src="/goddesslaxmi.png"
+                              alt="Goddess Laxmi illustration"
+                              fill
+                              priority
+                              sizes="(max-width: 640px) 300px, (max-width: 1024px) 380px, 460px"
+                              className="object-cover object-center scale-[1.06] drop-shadow-[0_0_24px_rgba(255,196,95,0.28)]"
+                            />
+                            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_58%,rgba(20,6,12,0.2)_84%,rgba(20,6,12,0.42)_100%)]" />
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="w-full max-w-4xl text-center">
-                      <div className="mt-4 flex flex-wrap justify-center gap-2">
-                        {currentCopy.tickets.slice(0, 3).map((ticket) => (
-                          <span
-                            key={ticket.name}
-                            className="rounded-full border border-amber-200/25 bg-black/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-amber-100"
+                      <div className="w-full max-w-4xl text-center">
+                        <div className="mt-3 flex flex-wrap justify-center gap-1.5 sm:gap-2">
+                          {currentCopy.tickets.map((ticket) => (
+                            <span
+                              key={ticket.name}
+                              className="rounded-full border border-amber-200/25 bg-black/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-amber-100 sm:px-3 sm:py-1.5 sm:text-xs"
+                            >
+                              {ticket.name}
+                            </span>
+                          ))}
+                        </div>
+                        <p className="mx-auto mt-4 max-w-3xl text-sm leading-7 text-orange-50/90 md:text-base">
+                          {currentCopy.heroDescription}
+                        </p>
+                        <div className="mt-4 flex flex-wrap justify-center gap-3">
+                          <motion.button
+                            whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(253, 224, 71, 0.25)" }}
+                            transition={{ duration: 0.18 }}
+                            className="rounded-full bg-[#1b0606] px-6 py-3 text-sm font-semibold text-white"
                           >
-                            {ticket.name}
-                          </span>
-                        ))}
-                      </div>
-                      <p className="mx-auto mt-5 max-w-3xl text-sm leading-7 text-orange-50/90 md:text-base">
-                        {currentCopy.heroDescription}
-                      </p>
-                      <div className="mt-6 flex flex-wrap justify-center gap-3">
-                        <motion.button
-                          whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(253, 224, 71, 0.25)" }}
-                          transition={{ duration: 0.18 }}
-                          className="rounded-full bg-[#1b0606] px-6 py-3 text-sm font-semibold text-white"
-                        >
-                          {currentCopy.primaryCta}
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          transition={{ duration: 0.18 }}
-                          className="rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-semibold text-white"
-                        >
-                          {currentCopy.secondaryCta}
-                        </motion.button>
-                      </div>
-                      <div className="mt-6 grid gap-3 md:grid-cols-3">
-                        {currentCopy.stats.map((item) => (
-                          <Counter key={item.label} {...item} />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </motion.section>
-
-                <motion.section
-                  initial={{ opacity: 0, y: 24 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35, ease: "easeOut" }}
-                  className="royal-panel rounded-[28px] border border-white/10 bg-[#140912] p-4"
-                >
-                  <div className="relative overflow-hidden rounded-3xl border border-purple-300/15 bg-gradient-to-br from-[#4430a3] via-[#5c34d2] to-[#e1a212] p-3">
-                    <div className="relative aspect-[16/11] overflow-hidden rounded-[22px] border border-white/15">
-                      <Image
-                        src="/ref-purple-lottery.png"
-                        alt="Purple lottery dashboard inspiration"
-                        fill
-                        className="object-cover"
-                        priority
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-4 rounded-2xl border border-cyan-300/10 bg-[#0f1626] p-4">
-                    <p className="text-xs uppercase tracking-[0.16em] text-cyan-200/80">
-                      {currentCopy.countdownTitle}
-                    </p>
-                    <div className="mt-3 flex gap-2">
-                      <TimeBox value={countdown.hours} label={currentCopy.hrs} />
-                      <TimeBox value={countdown.minutes} label={currentCopy.mins} />
-                      <TimeBox value={countdown.seconds} label={currentCopy.secs} />
-                    </div>
-                    <p className="mt-3 text-xs text-zinc-300">
-                      {currentCopy.nextDrawAt} {formatDrawTime(nextDraw)}
-                    </p>
-                  </div>
-
-                  <div className="mt-4 space-y-3">
-                    {currentCopy.tickets.slice(0, 3).map((ticket) => (
-                      <motion.div
-                        key={ticket.name}
-                        whileHover={{ y: -2, boxShadow: "0 0 18px rgba(255, 174, 66, 0.12)" }}
-                        transition={{ duration: 0.16 }}
-                        className="rounded-2xl border border-white/8 bg-white/[0.04] p-3"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-zinc-100">{ticket.name}</p>
-                            <p className="mt-1 text-lg font-bold text-amber-300">{ticket.prize}</p>
-                          </div>
-                          <span className="rounded-full bg-white/8 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.1em] text-zinc-200">
-                            {ticket.time}
-                          </span>
+                            {currentCopy.primaryCta}
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            transition={{ duration: 0.18 }}
+                            className="rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-semibold text-white"
+                          >
+                            {currentCopy.secondaryCta}
+                          </motion.button>
                         </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.section>
-              </div>
+                      </div>
+                    </div>
+                  </motion.section>
 
-              <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_290px]">
-                <section className="royal-panel rounded-[28px] border border-white/10 bg-[#14070f] p-5">
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <h2 className="text-xl font-semibold">{currentCopy.popularTitle}</h2>
-                    <span className="rounded-full bg-white/5 px-3 py-1 text-xs text-zinc-300">
-                      IST
-                    </span>
-                  </div>
+                  <section className="royal-panel rounded-[24px] border border-white/10 bg-[#14070f] p-4 sm:rounded-[28px] sm:p-5">
+                    <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
+                      <h2 className="text-lg font-semibold sm:text-xl">{currentCopy.popularTitle}</h2>
+                      <span className="rounded-full bg-white/5 px-3 py-1 text-xs text-zinc-300">
+                        IST
+                      </span>
+                    </div>
 
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {currentCopy.tickets.map((ticket, index) => {
-                      const gradients = [
-                        "from-[#2ca7ff] to-[#6157ff]",
-                        "from-[#ff7b38] to-[#ff3d6e]",
-                        "from-[#7a5cff] to-[#c052ff]",
-                        "from-[#e0a60d] to-[#ff7b38]",
-                      ];
+                    <div className="grid items-start gap-3 md:grid-cols-2">
+                      {currentCopy.tickets.map((ticket, index) => {
+                        const gradients = [
+                          "from-[#2ca7ff] to-[#6157ff]",
+                          "from-[#ff7b38] to-[#ff3d6e]",
+                          "from-[#7a5cff] to-[#c052ff]",
+                          "from-[#e0a60d] to-[#ff7b38]",
+                          "from-[#00c6ff] to-[#0072ff]",
+                          "from-[#f857a6] to-[#ff5858]",
+                          "from-[#56ab2f] to-[#a8e063]",
+                        ];
+                        const accent = gradients[index % gradients.length];
 
-                      return (
-                        <motion.article
-                          key={ticket.name}
-                          whileHover={{ y: -4, boxShadow: "0 0 28px rgba(255, 153, 0, 0.18)" }}
-                          transition={{ duration: 0.18 }}
-                          className={`rounded-3xl bg-gradient-to-r ${gradients[index]} p-[1px] transition`}
-                        >
-                          <div className="rounded-[calc(1.5rem-1px)] bg-[#180912] p-4">
-                            <div className="flex items-center justify-between gap-4">
-                              <div>
-                                <p className="text-sm font-semibold">{ticket.name}</p>
-                                <p className="mt-2 text-2xl font-bold text-amber-300">
-                                  {ticket.prize}
-                                </p>
+                        return (
+                          <motion.article
+                            key={ticket.name}
+                            whileHover={{ boxShadow: "0 0 28px rgba(255, 153, 0, 0.18)" }}
+                            transition={{ duration: 0.18 }}
+                            className={`group self-start rounded-3xl bg-gradient-to-r p-[2px] ${accent} transition`}
+                          >
+                            <div className="flex flex-col overflow-hidden rounded-[22px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]">
+                              <div className="flex flex-col bg-[#120b0f] p-3 transition-[border-radius] duration-300 ease-out sm:p-4 rounded-[22px] group-hover:rounded-t-[22px] group-hover:rounded-b-[14px]">
+                                <div className="flex items-start justify-between gap-2 sm:gap-3">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-[11px] font-semibold leading-snug text-zinc-100 sm:text-xs md:text-sm">
+                                      {ticket.name}
+                                    </p>
+                                    <p className="mt-1 text-base font-bold leading-tight text-amber-300 sm:text-lg md:text-xl">
+                                      {ticket.prize}
+                                    </p>
+                                  </div>
+                                  <div className="max-w-[48%] shrink-0 rounded-xl bg-white/10 px-2 py-1.5 text-right text-[9px] leading-tight text-zinc-100 sm:rounded-2xl sm:px-2.5 sm:py-2 sm:text-[10px] md:text-xs">
+                                    {ticket.time}
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="mt-3 w-fit rounded-full bg-white/12 px-3 py-1.5 text-[10px] font-semibold text-white sm:mt-4 sm:px-4 sm:py-2 sm:text-xs"
+                                >
+                                  {currentCopy.buyTicket}
+                                </button>
                               </div>
-                              <div className="rounded-2xl bg-white/10 px-3 py-2 text-xs text-zinc-100">
-                                {ticket.time}
-                              </div>
+                              <div
+                                className={`h-0 shrink-0 overflow-hidden bg-gradient-to-r transition-[height] duration-300 ease-out rounded-b-[22px] group-hover:h-[36px] group-hover:rounded-t-[14px] ${accent}`}
+                                aria-hidden
+                              />
                             </div>
-                            <button className="mt-4 rounded-full bg-white/12 px-4 py-2 text-xs font-semibold text-white">
-                              Buy Ticket
-                            </button>
-                          </div>
-                        </motion.article>
-                      );
-                    })}
-                  </div>
-                </section>
+                          </motion.article>
+                        );
+                      })}
+                    </div>
+                  </section>
+                </div>
 
-                <section className="royal-panel rounded-[28px] border border-white/10 bg-[#14070f] p-5">
-                  <h2 className="text-xl font-semibold">{currentCopy.liveResultsTitle}</h2>
-                  <div className="mt-4 space-y-3">
-                    {currentCopy.resultRows.map((row) => (
-                      <motion.div
-                        key={row.name}
-                        whileHover={{ x: 3 }}
-                        transition={{ duration: 0.16 }}
-                        className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3"
-                      >
-                        <span className="text-sm text-zinc-200">{row.name}</span>
-                        <span className="rounded-full bg-amber-300/12 px-3 py-1 text-xs font-semibold text-amber-200">
-                          {row.result}
-                        </span>
-                      </motion.div>
-                    ))}
-                  </div>
-                </section>
+                <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
+                  <RightInsightColumn
+                    currentCopy={currentCopy}
+                    countdown={countdown}
+                    nextDraw={nextDraw}
+                  />
+
+                  <section className="royal-panel min-w-0 rounded-[24px] border border-white/10 bg-[#14070f] p-4 sm:rounded-[28px] sm:p-5">
+                    <h2 className="text-lg font-semibold sm:text-xl">{currentCopy.liveResultsTitle}</h2>
+                    <div className="mt-3 space-y-2 sm:mt-4 sm:space-y-3">
+                      {currentCopy.resultRows.map((row) => (
+                        <motion.div
+                          key={row.name}
+                          whileHover={{ x: 3 }}
+                          transition={{ duration: 0.16 }}
+                          className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-2.5 sm:py-3"
+                        >
+                          <span className="text-sm text-zinc-200">{row.name}</span>
+                          <span className="rounded-full bg-amber-300/12 px-3 py-1 text-xs font-semibold text-amber-200">
+                            {row.result}
+                          </span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </section>
+
+                  <motion.section
+                    whileHover={{ y: -3 }}
+                    transition={{ duration: 0.18 }}
+                    className="royal-panel rounded-[24px] border border-orange-300/15 bg-gradient-to-r from-[#582313] via-[#8a2b13] to-[#d37b13] p-4 sm:rounded-[28px] sm:p-5"
+                  >
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-orange-100/85 sm:text-xs">
+                      UPI • Instant results
+                    </p>
+                    <h2 className="mt-2 max-w-lg text-xl font-semibold leading-snug sm:mt-3 sm:text-2xl">
+                      {currentCopy.footerTitle}
+                    </h2>
+                    {currentCopy.footerDescription ? (
+                      <p className="mt-2 max-w-xl text-xs leading-6 text-orange-50/90 sm:text-sm sm:leading-7">
+                        {currentCopy.footerDescription}
+                      </p>
+                    ) : null}
+                    <button className="mt-4 rounded-full bg-[#180808] px-5 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.03] sm:mt-5">
+                      {currentCopy.footerButton}
+                    </button>
+                  </motion.section>
+                </div>
               </div>
 
-              <section className="royal-panel mt-5 rounded-[28px] border border-white/10 bg-[#14070f] p-5">
+              <section className="royal-panel mt-4 rounded-[28px] border border-white/10 bg-[#14070f] p-5 sm:mt-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <h2 className="text-xl font-semibold">{currentCopy.categoriesTitle}</h2>
                   <span className="text-xs text-zinc-400">Featured sections</span>
@@ -679,64 +907,6 @@ export default function Home() {
                 </div>
               </section>
 
-              <section className="mt-5 grid gap-4 xl:grid-cols-2">
-                <div className="royal-panel rounded-[28px] border border-white/10 bg-[#14070f] p-5">
-                  <h2 className="text-xl font-semibold">{currentCopy.previewTitle}</h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-7 text-zinc-300">
-                    {currentCopy.previewDescription}
-                  </p>
-                  <div className="mt-5 grid gap-4 md:grid-cols-2">
-                    <motion.div
-                      whileHover={{ y: -4 }}
-                      transition={{ duration: 0.18 }}
-                      className="rounded-3xl border border-white/10 bg-[#1b0b1d] p-3"
-                    >
-                      <div className="relative aspect-[16/11] overflow-hidden rounded-[20px]">
-                        <Image
-                          src="/ref-purple-lottery.png"
-                          alt="Purple lottery UI reference"
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    </motion.div>
-
-                    <motion.div
-                      whileHover={{ y: -4 }}
-                      transition={{ duration: 0.18 }}
-                      className="rounded-3xl border border-white/10 bg-[#1b0b1d] p-3"
-                    >
-                      <div className="relative aspect-[16/11] overflow-hidden rounded-[20px]">
-                        <Image
-                          src="/ref-red-dashboard.png"
-                          alt="Red lottery dashboard UI reference"
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    </motion.div>
-                  </div>
-                </div>
-
-                <motion.div
-                  whileHover={{ y: -3 }}
-                  transition={{ duration: 0.18 }}
-                  className="royal-panel rounded-[28px] border border-orange-300/15 bg-gradient-to-r from-[#582313] via-[#8a2b13] to-[#d37b13] p-6"
-                >
-                  <p className="text-xs uppercase tracking-[0.18em] text-orange-100/85">
-                    UPI • Wallet • Instant results
-                  </p>
-                  <h2 className="mt-3 max-w-lg text-3xl font-semibold leading-tight">
-                    {currentCopy.footerTitle}
-                  </h2>
-                  <p className="mt-3 max-w-xl text-sm leading-7 text-orange-50/90">
-                    {currentCopy.footerDescription}
-                  </p>
-                  <button className="mt-6 rounded-full bg-[#180808] px-6 py-3 text-sm font-semibold text-white transition hover:scale-[1.03]">
-                    {currentCopy.footerButton}
-                  </button>
-                </motion.div>
-              </section>
             </section>
           </div>
         </div>
