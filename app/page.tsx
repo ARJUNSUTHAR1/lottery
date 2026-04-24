@@ -231,6 +231,96 @@ const copy: Record<Language, CopyPack> = {
   },
 };
 
+const sliderImages = [
+  "/slider1.png",
+  "/slider2.png",
+  "/slider3.png",
+  "/slider4.png",
+  "/slider5.png",
+  "/slider7.png",
+  "/slider8.png",
+  "/slider9.png",
+  "/slider10.png",
+] as const;
+
+function VerticalImageCarousel({
+  className,
+  intervalMs = 1000,
+}: {
+  className?: string;
+  intervalMs?: number;
+}) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const timerRef = useRef<number | null>(null);
+  const restartKeyRef = useRef(0);
+
+  useEffect(() => {
+    const tick = () => {
+      timerRef.current = window.setTimeout(() => {
+        setActiveIndex((i) => (i + 1) % sliderImages.length);
+        tick();
+      }, intervalMs);
+    };
+
+    tick();
+    return () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    };
+  }, [intervalMs]);
+
+  const setActiveAndRestart = (index: number) => {
+    setActiveIndex(index);
+    restartKeyRef.current += 1;
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => {
+      setActiveIndex((i) => (i + 1) % sliderImages.length);
+    }, intervalMs);
+  };
+
+  const src = sliderImages[activeIndex];
+
+  return (
+    <div className={["relative flex h-full w-full flex-col", className ?? ""].join(" ")}>
+      <div className="relative min-h-0 flex-1 overflow-hidden rounded-[22px]">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={src}
+            initial={{ opacity: 0, y: 28, scale: 0.99 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -22, scale: 0.99 }}
+            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-0"
+          >
+            <Image
+              src={src}
+              alt={`Slider image ${activeIndex + 1}`}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1280px) 100vw, 1200px"
+              className="object-cover object-center"
+              priority={activeIndex === 0}
+            />
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      <div className="mt-3 flex justify-center gap-1.5">
+        {sliderImages.map((_, index) => (
+          <button
+            key={index}
+            type="button"
+            onClick={() => setActiveAndRestart(index)}
+            className={`h-2 cursor-pointer rounded-full transition ${
+              index === activeIndex ? "w-7 bg-amber-300" : "w-2 bg-white/25 hover:bg-white/40"
+            }`}
+            aria-label={`Show slide ${index + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function getNextDrawTime(baseDate: Date): Date {
   const drawHours = [13, 18, 21];
   const now = new Date(baseDate);
@@ -401,8 +491,8 @@ function RightInsightColumn({
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-amber-300/15 bg-[radial-gradient(circle_at_top,rgba(255,191,36,0.08),transparent_50%),#1a0f14]">
         <Image
-          src="/winnerticket.png"
-          alt="Winner ticket"
+          src="/goddesslaxmi.png"
+          alt="Goddess Laxmi illustration"
           fill
           priority
           sizes="(max-width: 1279px) 100vw, 320px"
@@ -531,32 +621,8 @@ function PanelCorners() {
   );
 }
 
-function SidebarContent({ currentCopy }: { currentCopy: CopyPack }) {
-  return (
-    <>
-      <div className="space-y-3 pb-10">
-        {currentCopy.menu.map((item, index) => (
-          <motion.button
-            key={item}
-            whileHover={{ x: 4 }}
-            transition={{ duration: 0.12, ease: "easeOut" }}
-            className={`w-full rounded-[20px] px-4 py-2.5 text-left text-[15px] transition ${
-              index === 0
-                ? "bg-gradient-to-r from-orange-500 to-red-500 text-white"
-                : "bg-white/[0.04] text-zinc-300 hover:text-white"
-            }`}
-          >
-            {item}
-          </motion.button>
-        ))}
-      </div>
-    </>
-  );
-}
-
 export default function Home() {
   const [language, setLanguage] = useState<Language>("en");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const currentCopy = copy[language];
   const [nextDraw, setNextDraw] = useState<Date>(() => getNextDrawTime(new Date()));
   const [remainingTime, setRemainingTime] = useState(0);
@@ -603,103 +669,63 @@ export default function Home() {
 
       <main className="relative h-screen overflow-hidden">
         <div className="flex h-full flex-col bg-[#17060d]/90 backdrop-blur-xl">
-          <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 bg-[#17060d]/95 px-12 py-6 backdrop-blur-xl md:px-14">
-            <div className="flex items-center gap-6">
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(true)}
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/20 lg:hidden"
-                aria-label="Open sidebar menu"
-              >
-                <span className="flex w-5 flex-col gap-1.5">
-                  <span className="h-0.5 w-full rounded-full bg-white" />
-                  <span className="h-0.5 w-full rounded-full bg-white" />
-                  <span className="h-0.5 w-full rounded-full bg-white" />
-                </span>
-              </button>
-              <p className="text-lg font-semibold uppercase tracking-[0.18em] text-amber-300">
-                {currentCopy.heroTitle}
-              </p>
-              <nav className="hidden items-center gap-5 text-sm text-zinc-300 md:flex">
-                {currentCopy.navItems.map((item) => (
-                  <a key={item} href="#" className="transition hover:text-white">
-                    {item}
-                  </a>
-                ))}
-              </nav>
-            </div>
+          <header className="sticky top-0 z-20 border-b border-white/10 bg-[#17060d]/95 backdrop-blur-xl">
+            <div className="mx-auto flex w-full max-w-[1800px] flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6 sm:py-6 lg:px-12">
+              <div className="flex items-center gap-6">
+                <div className="flex flex-col leading-none">
+                  <p className="text-lg font-semibold uppercase tracking-[0.18em] text-amber-300">
+                    {currentCopy.heroTitle}
+                  </p>
+                  <p className="mt-1 text-[10px] font-semibold uppercase text-zinc-300/80">
+                    Government Lottery
+                  </p>
+                </div>
 
-            <div className="flex items-center gap-2 text-sm">
-              <div className="rounded-full border border-white/15 bg-black/20 p-1">
-                <button
-                  onClick={() => setLanguage("en")}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                    language === "en" ? "bg-white text-zinc-900" : "text-zinc-200"
-                  }`}
-                >
-                  EN
+                <nav className="hidden items-center gap-2 text-xs font-semibold text-zinc-200 lg:flex">
+                  {currentCopy.menu.map((item, index) => (
+                    <a
+                      key={item}
+                      href="#"
+                      className={`rounded-full px-3 py-2 transition ${
+                        index === 0 ? "bg-white/10 text-white" : "text-zinc-300 hover:bg-white/5 hover:text-white"
+                      }`}
+                    >
+                      {item}
+                    </a>
+                  ))}
+                </nav>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm">
+                <div className="rounded-full border border-white/15 bg-black/20 p-1">
+                  <button
+                    onClick={() => setLanguage("en")}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                      language === "en" ? "bg-white text-zinc-900" : "text-zinc-200"
+                    }`}
+                  >
+                    EN
+                  </button>
+                  <button
+                    onClick={() => setLanguage("hi")}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                      language === "hi" ? "bg-white text-zinc-900" : "text-zinc-200"
+                    }`}
+                  >
+                    हिं
+                  </button>
+                </div>
+                <button className="rounded-full border border-white/15 px-4 py-2 text-zinc-100 transition hover:border-white/30">
+                  {currentCopy.signIn}
                 </button>
-                <button
-                  onClick={() => setLanguage("hi")}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                    language === "hi" ? "bg-white text-zinc-900" : "text-zinc-200"
-                  }`}
-                >
-                  हिं
+                <button className="rounded-full bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 px-4 py-2 font-semibold text-[#2d1400] transition hover:scale-[1.03]">
+                  {currentCopy.register}
                 </button>
               </div>
-              <button className="rounded-full border border-white/15 px-4 py-2 text-zinc-100 transition hover:border-white/30">
-                {currentCopy.signIn}
-              </button>
-              <button className="rounded-full bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 px-4 py-2 font-semibold text-[#2d1400] transition hover:scale-[1.03]">
-                {currentCopy.register}
-              </button>
             </div>
           </header>
 
-          <AnimatePresence>
-            {mobileMenuOpen ? (
-              <>
-                <motion.button
-                  type="button"
-                  aria-label="Close sidebar menu"
-                  className="absolute inset-0 z-30 bg-black/55 lg:hidden"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={() => setMobileMenuOpen(false)}
-                />
-                <motion.aside
-                  initial={{ x: -320, opacity: 0.6 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: -320, opacity: 0.6 }}
-                  transition={{ duration: 0.22, ease: "easeOut" }}
-                  className="hide-scrollbar absolute left-0 top-0 z-40 h-full w-[280px] overflow-y-auto border-r border-white/10 bg-[#12040b]/95 px-5 pb-24 pt-6 shadow-2xl lg:hidden"
-                >
-                  <div className="mb-5 flex items-center justify-between">
-                    <p className="text-base font-semibold uppercase tracking-[0.18em] text-amber-300">
-                      {currentCopy.heroTitle}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/20 text-xl text-white"
-                      aria-label="Close sidebar menu"
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <SidebarContent currentCopy={currentCopy} />
-                </motion.aside>
-              </>
-            ) : null}
-          </AnimatePresence>
-
-          <div className="grid min-h-0 flex-1 items-start px-4 pb-4 md:px-5 md:pb-5 lg:grid-cols-[210px_minmax(0,1fr)] lg:px-6 lg:pb-6">
-            <aside className="hide-scrollbar hidden h-full overflow-y-auto border-r border-white/10 bg-[#12040b]/80 px-5 pb-28 pt-8 lg:block">
-              <SidebarContent currentCopy={currentCopy} />
-            </aside>
-
+          <div className="mx-auto w-full max-w-[1800px] min-h-0 flex-1 px-4 pb-4 md:px-5 md:pb-5 lg:px-6 lg:pb-6">
             <section className="hide-scrollbar h-full overflow-y-auto p-5 md:p-7">
               <div className="grid gap-3 sm:gap-4 xl:grid-cols-[minmax(0,1.2fr)_290px] xl:items-start">
                 <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
@@ -707,26 +733,13 @@ export default function Home() {
                     initial={{ opacity: 0, y: 24 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.35, ease: "easeOut" }}
-                    className="royal-panel royal-panel-strong relative w-full overflow-hidden rounded-[24px] border border-white/10 bg-gradient-to-r from-[#5d0f13] via-[#8d1b18] to-[#d27a12] px-5 pb-3 pt-5 sm:rounded-[28px] sm:px-6 sm:pt-6"
+                    className="royal-panel royal-panel-strong relative w-full overflow-hidden rounded-[24px] border border-white/10 bg-transparent px-5 pb-3 pt-5 sm:rounded-[28px] sm:px-6 sm:pt-6"
                   >
                     <PanelCorners />
-                    <div className="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_center,rgba(255,221,128,0.35),transparent_70%)] md:block" />
                     <div className="relative flex w-full flex-col items-center gap-4">
-                      <div className="relative mx-auto w-full max-w-[300px] sm:max-w-[380px] lg:max-w-[460px]">
-                        <div className="absolute inset-x-6 bottom-4 h-24 rounded-full bg-amber-300/35 blur-2xl sm:inset-x-10 sm:bottom-5" />
-                        <div className="royal-panel royal-panel-strong relative overflow-hidden rounded-[30px] border border-amber-200/38 bg-[#1b0b10]/65 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:p-4">
-                          <PanelCorners />
-                          <div className="relative aspect-[4/5] overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_top,rgba(255,213,128,0.15),transparent_55%),linear-gradient(180deg,#321016,#1a090c)]">
-                            <Image
-                              src="/goddesslaxmi.png"
-                              alt="Goddess Laxmi illustration"
-                              fill
-                              priority
-                              sizes="(max-width: 640px) 300px, (max-width: 1024px) 380px, 460px"
-                              className="object-cover object-center scale-[1.06] drop-shadow-[0_0_24px_rgba(255,196,95,0.28)]"
-                            />
-                            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_58%,rgba(20,6,12,0.2)_84%,rgba(20,6,12,0.42)_100%)]" />
-                          </div>
+                      <div className="relative w-full overflow-hidden rounded-[22px] border border-white/10 bg-black/10 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+                        <div className="h-[260px] w-full sm:h-[360px] lg:h-[460px]">
+                          <VerticalImageCarousel className="h-full p-0" intervalMs={3000} />
                         </div>
                       </div>
 

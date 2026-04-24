@@ -151,3 +151,30 @@ body {
   z-index: 20;
 }
 
+@keyframes infinite-slider-x {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.infinite-slider-track {
+  display: flex;
+  height: 100%;
+  width: 200%;
+  animation: infinite-slider-x 26s linear infinite;
+  will-change: transform;
+}
+
+.infinite-slider-slide {
+  flex: 0 0 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .infinite-slider-track {
+    animation: none;
+  }
+}
+
