@@ -2,7 +2,12 @@
 
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AuthModal } from "./components/AuthModal";
+import { ProfilePanel } from "./components/ProfilePanel";
+import { TicketBookingModal } from "./components/TicketBookingModal";
+import type { SafeUser } from "@/lib/auth";
+import type { DrawSummaryPublic } from "@/lib/draws";
 
 type Language = "en" | "hi";
 
@@ -281,8 +286,8 @@ function VerticalImageCarousel({
   const src = sliderImages[activeIndex];
 
   return (
-    <div className={["relative flex h-full w-full flex-col", className ?? ""].join(" ")}>
-      <div className="relative min-h-0 flex-1 overflow-hidden rounded-[22px]">
+    <div className={["relative flex w-full flex-col", className ?? ""].join(" ")}>
+      <div className="relative aspect-[1672/941] w-full overflow-hidden rounded-[22px] bg-black/20">
         <AnimatePresence mode="wait">
           <motion.div
             key={src}
@@ -297,7 +302,7 @@ function VerticalImageCarousel({
               alt={`Slider image ${activeIndex + 1}`}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1280px) 100vw, 1200px"
-              className="object-cover object-center"
+              className="object-contain object-center"
               priority={activeIndex === 0}
             />
           </motion.div>
@@ -542,7 +547,7 @@ function RightInsightColumn({
                 </span>
               </div>
               <p className="mt-3 text-[11px] leading-relaxed text-zinc-300 sm:text-xs sm:leading-relaxed">
-                "{active.quote}"
+                &quot;{active.quote}&quot;
               </p>
             </motion.div>
           </AnimatePresence>
@@ -626,6 +631,86 @@ export default function Home() {
   const currentCopy = copy[language];
   const [nextDraw, setNextDraw] = useState<Date>(() => getNextDrawTime(new Date()));
   const [remainingTime, setRemainingTime] = useState(0);
+  const [authUser, setAuthUser] = useState<SafeUser | null>(null);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "register">("signin");
+  const [authDialogKey, setAuthDialogKey] = useState(0);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [bookingMessage, setBookingMessage] = useState("");
+
+  // Live draws from DB
+  const [liveDraws, setLiveDraws] = useState<DrawSummaryPublic[]>([]);
+  // Ticket booking modal state
+  const [ticketModalDraw, setTicketModalDraw] = useState<DrawSummaryPublic | null>(null);
+  const [ticketModalOpen, setTicketModalOpen] = useState(false);
+
+  const openAuth = (mode: "signin" | "register") => {
+    setAuthMode(mode);
+    setAuthDialogKey((k) => k + 1);
+    setAuthOpen(true);
+  };
+
+  const updateAuthedUser = useCallback((user: SafeUser | null) => {
+    setAuthUser(user);
+  }, []);
+
+  // Restore session on page load
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auth/me")
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return (await response.json()) as { user: SafeUser };
+      })
+      .then((profile) => {
+        if (!cancelled && profile?.user) setAuthUser(profile.user);
+      })
+      .catch(() => {
+        if (!cancelled) setAuthUser(null);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Fetch live draws from DB, fall back to static data gracefully
+  useEffect(() => {
+    fetch("/api/draws")
+      .then(async (r) => {
+        if (!r.ok) return;
+        const data = (await r.json()) as { draws: DrawSummaryPublic[] };
+        if (data.draws.length) setLiveDraws(data.draws);
+      })
+      .catch(() => {});
+  }, []);
+
+  const openTicketModal = (draw: DrawSummaryPublic) => {
+    setTicketModalDraw(draw);
+    setTicketModalOpen(true);
+  };
+
+  // For static draw cards, find matching DB draw by name fragment
+  const findLiveDraw = (staticName: string): DrawSummaryPublic | null => {
+    const norm = staticName.toLowerCase();
+    return (
+      liveDraws.find((d) => d.name.toLowerCase().includes(norm.split(" ")[0])) ?? null
+    );
+  };
+
+  const bookTicket = (ticket: Ticket) => {
+    setBookingMessage("");
+    const liveDraw = findLiveDraw(ticket.name);
+    if (liveDraw) {
+      openTicketModal(liveDraw);
+    } else {
+      // No DB draw yet – prompt auth or show info
+      if (!authUser) {
+        openAuth("signin");
+      } else {
+        setBookingMessage(
+          `${ticket.name} is not yet available in the system. Run npm run seed to load draws.`,
+        );
+      }
+    }
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -715,12 +800,37 @@ export default function Home() {
                     हिं
                   </button>
                 </div>
-                <button className="rounded-full border border-white/15 px-4 py-2 text-zinc-100 transition hover:border-white/30">
-                  {currentCopy.signIn}
-                </button>
-                <button className="rounded-full bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 px-4 py-2 font-semibold text-[#2d1400] transition hover:scale-[1.03]">
-                  {currentCopy.register}
-                </button>
+                {authUser ? (
+                  <button
+                    type="button"
+                    onClick={() => setProfileOpen(true)}
+                    className="flex items-center gap-2 rounded-full border border-amber-200/20 bg-white/8 px-3 py-2 text-zinc-100 transition hover:border-amber-200/40"
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-orange-500 text-xs font-bold text-[#2d1400]">
+                      {authUser.name.slice(0, 1).toUpperCase()}
+                    </span>
+                    <span className="hidden max-w-28 truncate text-xs font-semibold sm:inline">
+                      {authUser.name}
+                    </span>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => openAuth("signin")}
+                      className="rounded-full border border-white/15 px-4 py-2 text-zinc-100 transition hover:border-white/30"
+                    >
+                      {currentCopy.signIn}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openAuth("register")}
+                      className="rounded-full bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 px-4 py-2 font-semibold text-[#2d1400] transition hover:scale-[1.03]"
+                    >
+                      {currentCopy.register}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </header>
@@ -738,41 +848,15 @@ export default function Home() {
                     <PanelCorners />
                     <div className="relative flex w-full flex-col items-center gap-4">
                       <div className="relative w-full overflow-hidden rounded-[22px] border border-white/10 bg-black/10 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
-                        <div className="h-[260px] w-full sm:h-[360px] lg:h-[460px]">
-                          <VerticalImageCarousel className="h-full p-0" intervalMs={3000} />
+                        <div className="w-full">
+                          <VerticalImageCarousel className="p-0" intervalMs={3000} />
                         </div>
                       </div>
 
                       <div className="w-full max-w-4xl text-center">
-                        <div className="mt-3 flex flex-wrap justify-center gap-1.5 sm:gap-2">
-                          {currentCopy.tickets.map((ticket) => (
-                            <span
-                              key={ticket.name}
-                              className="rounded-full border border-amber-200/25 bg-black/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-amber-100 sm:px-3 sm:py-1.5 sm:text-xs"
-                            >
-                              {ticket.name}
-                            </span>
-                          ))}
-                        </div>
                         <p className="mx-auto mt-4 max-w-3xl text-sm leading-7 text-orange-50/90 md:text-base">
                           {currentCopy.heroDescription}
                         </p>
-                        <div className="mt-4 flex flex-wrap justify-center gap-3">
-                          <motion.button
-                            whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(253, 224, 71, 0.25)" }}
-                            transition={{ duration: 0.18 }}
-                            className="rounded-full bg-[#1b0606] px-6 py-3 text-sm font-semibold text-white"
-                          >
-                            {currentCopy.primaryCta}
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            transition={{ duration: 0.18 }}
-                            className="rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-semibold text-white"
-                          >
-                            {currentCopy.secondaryCta}
-                          </motion.button>
-                        </div>
                       </div>
                     </div>
                   </motion.section>
@@ -784,6 +868,11 @@ export default function Home() {
                         IST
                       </span>
                     </div>
+                    {bookingMessage ? (
+                      <p className="mb-3 rounded-2xl border border-amber-200/15 bg-amber-300/10 px-4 py-3 text-xs text-amber-100">
+                        {bookingMessage}
+                      </p>
+                    ) : null}
 
                     <div className="grid items-start gap-3 md:grid-cols-2">
                       {currentCopy.tickets.map((ticket, index) => {
@@ -797,6 +886,11 @@ export default function Home() {
                           "from-[#56ab2f] to-[#a8e063]",
                         ];
                         const accent = gradients[index % gradients.length];
+                        const live = findLiveDraw(ticket.name);
+                        const remaining = live?.availableTickets ?? null;
+                        const total = live?.totalTickets ?? null;
+                        const pctLeft =
+                          remaining != null && total && total > 0 ? Math.max(0, Math.min(100, (remaining / total) * 100)) : null;
 
                         return (
                           <motion.article
@@ -820,9 +914,26 @@ export default function Home() {
                                     {ticket.time}
                                   </div>
                                 </div>
+                                {pctLeft != null ? (
+                                  <div className="mt-3">
+                                    <div className="flex items-center justify-between text-[10px] font-semibold text-zinc-500">
+                                      <span>
+                                        Only <span className="text-amber-200">{remaining?.toLocaleString("en-IN")}</span> left
+                                      </span>
+                                      <span>{total?.toLocaleString("en-IN")} total</span>
+                                    </div>
+                                    <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full border border-white/10 bg-white/5">
+                                      <div
+                                        className="h-full rounded-full bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500"
+                                        style={{ width: `${pctLeft}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                ) : null}
                                 <button
                                   type="button"
-                                  className="mt-3 w-fit rounded-full bg-white/12 px-3 py-1.5 text-[10px] font-semibold text-white sm:mt-4 sm:px-4 sm:py-2 sm:text-xs"
+                                  onClick={() => bookTicket(ticket)}
+                                  className="mt-3 w-fit cursor-pointer rounded-full bg-white/12 px-3 py-1.5 text-[10px] font-semibold text-white sm:mt-4 sm:px-4 sm:py-2 sm:text-xs"
                                 >
                                   {currentCopy.buyTicket}
                                 </button>
@@ -881,7 +992,15 @@ export default function Home() {
                         {currentCopy.footerDescription}
                       </p>
                     ) : null}
-                    <button className="mt-4 rounded-full bg-[#180808] px-5 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.03] sm:mt-5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!authUser) openAuth("register");
+                        else if (liveDraws.length) openTicketModal(liveDraws[0]);
+                        else setProfileOpen(true);
+                      }}
+                      className="mt-4 rounded-full bg-[#180808] px-5 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.03] sm:mt-5"
+                    >
                       {currentCopy.footerButton}
                     </button>
                   </motion.section>
@@ -924,6 +1043,36 @@ export default function Home() {
           </div>
         </div>
       </main>
+      <AuthModal
+        open={authOpen}
+        initialMode={authMode}
+        onClose={() => setAuthOpen(false)}
+        onAuthed={(user) => {
+          setAuthUser(user);
+          setProfileOpen(true);
+        }}
+      />
+      <ProfilePanel
+        open={profileOpen}
+        user={authUser}
+        onClose={() => setProfileOpen(false)}
+        onUserUpdated={updateAuthedUser}
+      />
+      <TicketBookingModal
+        draw={ticketModalDraw}
+        user={authUser}
+        open={ticketModalOpen}
+        onClose={() => setTicketModalOpen(false)}
+        onNeedAuth={() => {
+          setTicketModalOpen(false);
+          openAuth("signin");
+        }}
+        onBooked={(result) => {
+          setBookingMessage(
+            `🎉 ${result.booked.length} ticket${result.booked.length !== 1 ? "s" : ""} booked successfully!`,
+          );
+        }}
+      />
     </div>
   );
 }

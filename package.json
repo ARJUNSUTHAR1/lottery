@@ -6,12 +6,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed": "tsx --env-file=.env scripts/seed-tickets.ts",
+    "backfill": "tsx --env-file=.env scripts/backfill-draw-tickets.ts",
+    "reset:samridhi": "tsx --env-file=.env scripts/reset-samridhi-tickets.ts",
+    "reset:kuber": "tsx --env-file=.env scripts/reset-kuber-tickets.ts"
   },
   "dependencies": {
+    "@types/nodemailer": "^8.0.0",
+    "bcryptjs": "^3.0.3",
     "canvas-confetti": "^1.9.4",
     "framer-motion": "^12.38.0",
+    "mongodb": "^7.2.0",
     "next": "16.2.4",
+    "nodemailer": "^8.0.7",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
@@ -21,9 +29,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
