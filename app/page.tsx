@@ -3,9 +3,13 @@
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AuthModal } from "./components/AuthModal";
 import { ProfilePanel } from "./components/ProfilePanel";
 import { TicketBookingModal } from "./components/TicketBookingModal";
+import { CartNavButton } from "./components/CartNavButton";
+import { ThemeToggle } from "./components/ThemeToggle";
+import { getCart, mergeCarts, setCart } from "@/app/cart/cartStorage";
 import type { SafeUser } from "@/lib/auth";
 import type { DrawSummaryPublic } from "@/lib/draws";
 
@@ -247,6 +251,145 @@ const sliderImages = [
   "/slider9.png",
   "/slider10.png",
 ] as const;
+
+const winners = [
+  { image: "devendra j bansal.jpeg", amount: "₹1 Lakh" },
+  { image: "nazir j balsara.jpeg", amount: "₹1 Lakh" },
+  { image: "magnesh y pawar.jpeg", amount: "₹5 Lakhs" },
+  { image: "krushmi y vira.jpeg", amount: "₹1 Lakh" },
+  { image: "vikash vishwakarma.jpeg", amount: "₹2 Lakhs" },
+] as const;
+
+function formatWinnerName(fileName: string): string {
+  const baseName = fileName.replace(/\.[^/.]+$/, "");
+  return baseName
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function WinnerCard({
+  imageName,
+  amount,
+  gradientClass,
+  burstKey,
+  onBurst,
+}: {
+  imageName: string;
+  amount: string;
+  gradientClass: string;
+  burstKey: number;
+  onBurst: () => void;
+}) {
+  const winnerName = formatWinnerName(imageName);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || burstKey === 0) {
+      const context = canvas?.getContext("2d");
+      if (canvas && context) context.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
+
+    let cancelled = false;
+    void import("canvas-confetti").then(({ default: confetti }) => {
+      if (cancelled) return;
+      const fire = confetti.create(canvas, { resize: true, useWorker: false });
+      const colors = [
+        "#fffbeb",
+        "#fef3c7",
+        "#fde68a",
+        "#fcd34d",
+        "#fbbf24",
+        "#f59e0b",
+        "#d97706",
+        "#b45309",
+      ];
+
+      fire({
+        particleCount: 32,
+        spread: 42,
+        startVelocity: 26,
+        ticks: 90,
+        gravity: 1.05,
+        scalar: 0.6,
+        origin: { x: 0.5, y: 0.35 },
+        colors,
+      });
+
+      fire({
+        particleCount: 18,
+        spread: 70,
+        startVelocity: 32,
+        ticks: 110,
+        gravity: 0.9,
+        scalar: 0.45,
+        origin: { x: 0.5, y: 0.3 },
+        colors,
+        shapes: ["circle"],
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [burstKey]);
+
+  return (
+    <motion.article whileHover={{ y: -6 }} transition={{ duration: 0.18 }} onPointerEnter={onBurst}>
+      <div className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${gradientClass} p-[1px] shadow-lg shadow-black/35`}>
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0f0a0c]/90 p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
+          <canvas
+            ref={canvasRef}
+            className="pointer-events-none absolute inset-0 z-[2] h-full w-full"
+            aria-hidden
+          />
+
+          <div className="pointer-events-none absolute inset-0 opacity-60">
+            <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-amber-300/10 blur-2xl" />
+            <div className="absolute -bottom-12 -left-12 h-36 w-36 rounded-full bg-white/5 blur-2xl" />
+          </div>
+
+          <div className="relative z-[4]">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                  Winner
+                </p>
+                <p className="mt-1 text-base font-semibold text-white">{winnerName}</p>
+              </div>
+              <span className="inline-flex max-w-[46%] items-center justify-center rounded-full border border-amber-200/20 bg-amber-300/10 px-2.5 py-1 text-[11px] font-bold leading-none text-amber-200 sm:max-w-none sm:px-3 sm:text-xs whitespace-nowrap">
+                Won {amount}
+              </span>
+            </div>
+
+            <div className="mt-5 flex items-center justify-center">
+              <div className="relative h-28 w-28 overflow-hidden rounded-full border border-white/15 bg-white/5 shadow-[0_0_0_6px_rgba(251,191,36,0.06)]">
+                <Image
+                  src={`/winner_image/${imageName}`}
+                  alt={`${winnerName} winner image`}
+                  width={112}
+                  height={112}
+                  className="h-full w-full object-cover"
+                />
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.22),transparent_55%)]" />
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center justify-center gap-2 text-xs text-zinc-400">
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/8 text-[11px]">
+                🎉
+              </span>
+              <span className="font-semibold text-zinc-300">Congratulations!</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.article>
+  );
+}
 
 function VerticalImageCarousel({
   className,
@@ -627,14 +770,23 @@ function PanelCorners() {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [language, setLanguage] = useState<Language>("en");
   const currentCopy = copy[language];
   const [nextDraw, setNextDraw] = useState<Date>(() => getNextDrawTime(new Date()));
   const [remainingTime, setRemainingTime] = useState(0);
   const [authUser, setAuthUser] = useState<SafeUser | null>(null);
-  const [authOpen, setAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<"signin" | "register">("signin");
-  const [authDialogKey, setAuthDialogKey] = useState(0);
+  const [authOpen, setAuthOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    const auth = params.get("auth");
+    return auth === "signin" || auth === "register";
+  });
+  const [authMode, setAuthMode] = useState<"signin" | "register">(() => {
+    if (typeof window === "undefined") return "signin";
+    const params = new URLSearchParams(window.location.search);
+    return params.get("auth") === "register" ? "register" : "signin";
+  });
   const [profileOpen, setProfileOpen] = useState(false);
   const [bookingMessage, setBookingMessage] = useState("");
 
@@ -643,10 +795,10 @@ export default function Home() {
   // Ticket booking modal state
   const [ticketModalDraw, setTicketModalDraw] = useState<DrawSummaryPublic | null>(null);
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
+  const [winnerBurst, setWinnerBurst] = useState({ image: "", key: 0 });
 
   const openAuth = (mode: "signin" | "register") => {
     setAuthMode(mode);
-    setAuthDialogKey((k) => k + 1);
     setAuthOpen(true);
   };
 
@@ -670,6 +822,50 @@ export default function Home() {
       });
     return () => { cancelled = true; };
   }, []);
+
+  // Load server cart after login and merge with local cart
+  useEffect(() => {
+    if (!authUser) return;
+    let cancelled = false;
+    void fetch("/api/cart", { cache: "no-store" })
+      .then(async (r) => ({ ok: r.ok, data: (await r.json()) as { cart?: unknown } }))
+      .then(({ ok, data }) => {
+        if (cancelled || !ok || !data.cart) return;
+        const remote = data.cart as ReturnType<typeof getCart>;
+        const merged = mergeCarts(getCart(), remote);
+        setCart(merged);
+        void fetch("/api/cart", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cart: merged }),
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser]);
+
+  // Persist cart to DB on updates (when signed in)
+  useEffect(() => {
+    if (!authUser) return;
+    let timer: number | null = null;
+    const handler = () => {
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        void fetch("/api/cart", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cart: getCart() }),
+        });
+      }, 300);
+    };
+    window.addEventListener("subhlaxmi_cart_updated", handler);
+    return () => {
+      if (timer) window.clearTimeout(timer);
+      window.removeEventListener("subhlaxmi_cart_updated", handler);
+    };
+  }, [authUser]);
 
   // Fetch live draws from DB, fall back to static data gracefully
   useEffect(() => {
@@ -754,7 +950,7 @@ export default function Home() {
 
       <main className="relative h-screen overflow-hidden">
         <div className="flex h-full flex-col bg-[#17060d]/90 backdrop-blur-xl">
-          <header className="sticky top-0 z-20 border-b border-white/10 bg-[#17060d]/95 backdrop-blur-xl">
+          <header className="sticky top-0 z-20 border-b border-amber-500/20 bg-[#17060d]/95 backdrop-blur-xl">
             <div className="mx-auto flex w-full max-w-[1800px] flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6 sm:py-6 lg:px-12">
               <div className="flex items-center gap-6">
                 <div className="flex flex-col leading-none">
@@ -800,6 +996,8 @@ export default function Home() {
                     हिं
                   </button>
                 </div>
+                <CartNavButton />
+                <ThemeToggle />
                 {authUser ? (
                   <button
                     type="button"
@@ -922,9 +1120,9 @@ export default function Home() {
                                       </span>
                                       <span>{total?.toLocaleString("en-IN")} total</span>
                                     </div>
-                                    <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full border border-white/10 bg-white/5">
+                                    <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full border border-emerald-200/15 bg-gradient-to-r from-emerald-950/70 via-amber-950/50 to-red-950/60 shadow-inner shadow-black/30">
                                       <div
-                                        className="h-full rounded-full bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500"
+                                        className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-lime-300 to-green-500 shadow-[0_0_12px_rgba(74,222,128,0.45)]"
                                         style={{ width: `${pctLeft}%` }}
                                       />
                                     </div>
@@ -1007,33 +1205,51 @@ export default function Home() {
                 </div>
               </div>
 
-              <section className="royal-panel mt-4 rounded-[28px] border border-white/10 bg-[#14070f] p-5 sm:mt-5">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <h2 className="text-xl font-semibold">{currentCopy.categoriesTitle}</h2>
-                  <span className="text-xs text-zinc-400">Featured sections</span>
+              <section className="royal-panel mt-4 overflow-hidden rounded-[28px] border border-white/10 bg-[#14070f] p-5 sm:mt-5">
+                <div className="pointer-events-none absolute inset-0 opacity-60">
+                  <div className="absolute left-[-6rem] top-[-6rem] h-72 w-72 rounded-full bg-amber-300/10 blur-3xl" />
+                  <div className="absolute right-[-7rem] bottom-[-7rem] h-80 w-80 rounded-full bg-orange-500/10 blur-3xl" />
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                  {currentCopy.categories.map((item, index) => {
+                <div className="relative mb-4 flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-amber-200/70">
+                      Trusted results
+                    </p>
+                    <h2 className="mt-2 text-xl font-semibold">Celebrating Our Winners</h2>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      Recent wins from verified ticket buyers.
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300">
+                    {winners.length} winners
+                  </span>
+                </div>
+
+                <div className="relative grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                  {winners.map((winner, index) => {
                     const palette = [
-                      "from-[#7827ff] to-[#4430a3]",
-                      "from-[#e45321] to-[#b91c1c]",
-                      "from-[#0ea5e9] to-[#2563eb]",
-                      "from-[#efb70d] to-[#f97316]",
-                      "from-[#db2777] to-[#9333ea]",
+                      "from-amber-400/30 to-orange-500/25",
+                      "from-cyan-400/25 to-blue-500/25",
+                      "from-emerald-400/25 to-lime-500/20",
+                      "from-fuchsia-400/25 to-purple-500/25",
+                      "from-sky-400/25 to-teal-500/20",
                     ];
 
                     return (
-                      <motion.article
-                        key={item.title}
-                        whileHover={{ y: -5, scale: 1.01 }}
-                        transition={{ duration: 0.18 }}
-                        className={`rounded-3xl bg-gradient-to-br ${palette[index]} p-5 shadow-lg shadow-black/20`}
-                      >
-                        <p className="text-lg font-semibold">{item.title}</p>
-                        <p className="mt-1 text-sm text-white/80">{item.subtitle}</p>
-                        <div className="mt-6 h-10 w-10 rounded-2xl bg-white/15" />
-                      </motion.article>
+                      <WinnerCard
+                        key={winner.image}
+                        imageName={winner.image}
+                        amount={winner.amount}
+                        gradientClass={palette[index % palette.length]}
+                        burstKey={winnerBurst.image === winner.image ? winnerBurst.key : 0}
+                        onBurst={() => {
+                          setWinnerBurst((current) => ({
+                            image: winner.image,
+                            key: current.key + 1,
+                          }));
+                        }}
+                      />
                     );
                   })}
                 </div>
@@ -1049,7 +1265,10 @@ export default function Home() {
         onClose={() => setAuthOpen(false)}
         onAuthed={(user) => {
           setAuthUser(user);
-          setProfileOpen(true);
+          const params = new URLSearchParams(window.location.search);
+          const next = params.get("next");
+          if (next) router.push(next);
+          else setProfileOpen(true);
         }}
       />
       <ProfilePanel
@@ -1066,11 +1285,6 @@ export default function Home() {
         onNeedAuth={() => {
           setTicketModalOpen(false);
           openAuth("signin");
-        }}
-        onBooked={(result) => {
-          setBookingMessage(
-            `🎉 ${result.booked.length} ticket${result.booked.length !== 1 ? "s" : ""} booked successfully!`,
-          );
         }}
       />
     </div>

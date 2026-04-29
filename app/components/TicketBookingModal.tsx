@@ -1,19 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { DrawPublic, SeriesStats, TicketPublic } from "@/lib/draws";
-import type { SafeUser } from "@/lib/auth";
+import { addToCart } from "@/app/cart/cartStorage";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Tab = "available" | "lp_special" | "search";
-
-type BookingResult = {
-  booked: TicketPublic[];
-  failed: string[];
-  total: number;
-};
 
 type TicketPage = {
   tickets: TicketPublic[];
@@ -27,11 +22,10 @@ type TicketPage = {
 
 type Props = {
   draw: DrawPublic | null;
-  user: SafeUser | null;
+  user: { id: string } | null;
   open: boolean;
   onClose: () => void;
   onNeedAuth: () => void;
-  onBooked: (result: BookingResult) => void;
 };
 
 // ─── Quick-pick amounts ───────────────────────────────────────────────────────
@@ -46,8 +40,8 @@ export function TicketBookingModal({
   open,
   onClose,
   onNeedAuth,
-  onBooked,
 }: Props) {
+  const router = useRouter();
   const [activeSeries, setActiveSeries] = useState("A");
   const [activeTab, setActiveTab] = useState<Tab>("available");
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,7 +52,6 @@ export function TicketBookingModal({
   const [loadingMore, setLoadingMore] = useState(false);
   const [selected, setSelected] = useState<Map<string, TicketPublic>>(new Map());
   const [bookingState, setBookingState] = useState<"idle" | "booking" | "success" | "error">("idle");
-  const [bookingResult, setBookingResult] = useState<BookingResult | null>(null);
   const [bookingError, setBookingError] = useState("");
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -75,9 +68,11 @@ export function TicketBookingModal({
     return () => clearTimeout(t);
   }, [searchQuery]);
 
-  // Initialize when modal opens (avoid sync setState in effects rule)
+  // Initialize when modal opens
   const didInitRef = useRef<string | null>(null);
-  if (open && draw && didInitRef.current !== draw.id) {
+  useEffect(() => {
+    if (!open || !draw) return;
+    if (didInitRef.current === draw.id) return;
     didInitRef.current = draw.id;
     setActiveSeries(draw.series[0] ?? "A");
     setActiveTab("available");
@@ -88,8 +83,7 @@ export function TicketBookingModal({
     setTicketData(null);
     setBookingState("idle");
     setBookingError("");
-    setBookingResult(null);
-  }
+  }, [open, draw]);
 
   // Fetch tickets
   const fetchTickets = useCallback(
@@ -132,7 +126,7 @@ export function TicketBookingModal({
   useEffect(() => {
     if (!open || !draw) return;
     Promise.resolve().then(() => fetchTickets(1));
-  }, [open, draw?.id, activeSeries, activeTab, debouncedSearch, fetchTickets]);
+  }, [open, draw, activeSeries, activeTab, debouncedSearch, fetchTickets]);
 
   // Scroll to top when series/tab changes
   useEffect(() => {
@@ -176,39 +170,43 @@ export function TicketBookingModal({
 
   // ─── Booking ─────────────────────────────────────────────────────────────
 
-  const handleBook = async () => {
+  const selectedNumbers = useMemo(() => [...selected.keys()], [selected]);
+
+  const handleAddToCart = () => {
     if (!user) {
       onNeedAuth();
       return;
     }
-    if (!selectedCount) return;
-    if (!draw) return;
-
-    setBookingState("booking");
+    if (!selectedCount || !draw) return;
+    addToCart({
+      drawId: draw.id,
+      drawName: draw.name,
+      drawDate: draw.drawDate,
+      drawTime: draw.drawTime,
+      pricePerTicket: draw.pricePerTicket,
+      ticketNumbers: selectedNumbers,
+    });
+    setBookingState("success");
     setBookingError("");
+    onClose();
+    router.push("/");
+  };
 
-    try {
-      const res = await fetch(`/api/draws/${draw.id}/book`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticketNumbers: [...selected.keys()] }),
-      });
-      const data = (await res.json()) as { result?: BookingResult; error?: string };
-
-      if (!res.ok || !data.result) {
-        throw new Error(data.error ?? "Booking failed.");
-      }
-
-      setBookingResult(data.result);
-      setBookingState("success");
-      setSelected(new Map());
-      onBooked(data.result);
-      // Refresh ticket grid
-      fetchTickets(1);
-    } catch (err) {
-      setBookingError(err instanceof Error ? err.message : "Booking failed.");
-      setBookingState("error");
+  const handleBuyNow = () => {
+    if (!user) {
+      onNeedAuth();
+      return;
     }
+    if (!selectedCount || !draw) return;
+    addToCart({
+      drawId: draw.id,
+      drawName: draw.name,
+      drawDate: draw.drawDate,
+      drawTime: draw.drawTime,
+      pricePerTicket: draw.pricePerTicket,
+      ticketNumbers: selectedNumbers,
+    });
+    router.push("/cart");
   };
 
   if (!draw) return null;
@@ -558,28 +556,29 @@ export function TicketBookingModal({
                     </p>
                   )}
 
-                  {bookingState === "success" && bookingResult && (
+                  {bookingState === "success" ? (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       className="mt-3 rounded-xl border border-emerald-300/20 bg-emerald-500/10 px-3 py-3 text-[11px]"
                     >
-                      <p className="font-bold text-emerald-300">
-                        🎉 {bookingResult.booked.length} ticket
-                        {bookingResult.booked.length !== 1 ? "s" : ""} booked!
-                      </p>
-                      {bookingResult.failed.length > 0 && (
-                        <p className="mt-1 text-amber-200">
-                          {bookingResult.failed.length} ticket
-                          {bookingResult.failed.length !== 1 ? "s were" : " was"} already sold.
-                        </p>
-                      )}
+                      <p className="font-bold text-emerald-300">✅ Added to cart</p>
+                      <p className="mt-1 text-zinc-300">Go to cart to pay and confirm.</p>
                     </motion.div>
-                  )}
+                  ) : null}
 
-                  <motion.button
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={handleAddToCart}
+                      disabled={!selectedCount}
+                      className="rounded-full border border-white/12 bg-white/8 py-3 text-sm font-bold text-zinc-100 transition hover:border-white/25 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Add to Cart
+                    </button>
+                    <motion.button
                     type="button"
-                    onClick={handleBook}
+                    onClick={handleBuyNow}
                     disabled={
                       !selectedCount ||
                       bookingState === "booking" ||
@@ -587,18 +586,17 @@ export function TicketBookingModal({
                     }
                     whileHover={selectedCount > 0 ? { scale: 1.02 } : {}}
                     transition={{ duration: 0.14 }}
-                    className="mt-4 w-full rounded-full bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 py-3 text-sm font-bold text-[#2d1400] transition disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full rounded-full bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 py-3 text-sm font-bold text-[#2d1400] transition disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {bookingState === "booking"
-                      ? "Booking…"
+                      ? "Loading…"
                       : bookingState === "success"
-                        ? "Booked ✓"
-                        : !user
-                          ? "Sign in to Book"
-                          : selectedCount > 0
-                            ? `Proceed to Pay — ₹${grandTotal.toFixed(2)}`
-                            : "Select Tickets"}
-                  </motion.button>
+                        ? "Added ✓"
+                        : selectedCount > 0
+                          ? `Buy Now — ₹${grandTotal.toFixed(2)}`
+                          : "Select Tickets"}
+                    </motion.button>
+                  </div>
                 </div>
               </aside>
             </div>
@@ -631,22 +629,27 @@ export function TicketBookingModal({
                     </button>
                     <button
                       type="button"
-                      onClick={handleBook}
+                      onClick={handleAddToCart}
+                      disabled={bookingState === "booking"}
+                      className="rounded-full border border-white/12 bg-white/8 px-4 py-2.5 text-sm font-bold text-zinc-100 transition disabled:opacity-50"
+                    >
+                      {bookingState === "booking" ? "Loading…" : "Add"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleBuyNow}
                       disabled={bookingState === "booking"}
                       className="rounded-full bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 px-5 py-2.5 text-sm font-bold text-[#2d1400] transition disabled:opacity-50"
                     >
-                      {bookingState === "booking" ? "Booking…" : "Pay →"}
+                      {bookingState === "booking" ? "Loading…" : "Buy Now"}
                     </button>
                   </div>
                   {bookingState === "error" && (
                     <p className="mt-2 text-[11px] text-red-300">{bookingError}</p>
                   )}
-                  {bookingState === "success" && bookingResult && (
-                    <p className="mt-2 text-[11px] text-emerald-300">
-                      🎉 {bookingResult.booked.length} ticket
-                      {bookingResult.booked.length !== 1 ? "s" : ""} booked successfully!
-                    </p>
-                  )}
+                  {bookingState === "success" ? (
+                    <p className="mt-2 text-[11px] text-emerald-300">✅ Added to cart</p>
+                  ) : null}
                 </motion.div>
               )}
             </AnimatePresence>

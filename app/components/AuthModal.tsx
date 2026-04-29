@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 import type { SafeUser } from "@/lib/auth";
 
 type AuthMode = "signin" | "register";
@@ -326,8 +326,6 @@ function AuthModalBody({
 }
 
 export function AuthModal({ open, initialMode, onClose, onAuthed }: Props) {
-  const mountKey = useMemo(() => (open ? `${initialMode}-${Date.now()}` : "closed"), [open, initialMode]);
-
   return (
     <AnimatePresence>
       {open ? (
@@ -339,7 +337,7 @@ export function AuthModal({ open, initialMode, onClose, onAuthed }: Props) {
           role="dialog"
           aria-modal="true"
         >
-          <AuthModalBody key={mountKey} initialMode={initialMode} onClose={onClose} onAuthed={onAuthed} />
+          <AuthModalBody initialMode={initialMode} onClose={onClose} onAuthed={onAuthed} />
         </motion.div>
       ) : null}
     </AnimatePresence>
