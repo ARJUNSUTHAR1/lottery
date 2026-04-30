@@ -5,11 +5,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthModal } from "./components/AuthModal";
+import { HeaderBar } from "./components/HeaderBar";
 import { ProfilePanel } from "./components/ProfilePanel";
 import { TicketBookingModal } from "./components/TicketBookingModal";
-import { CartNavButton } from "./components/CartNavButton";
-import { ThemeToggle } from "./components/ThemeToggle";
-import { getCart, mergeCarts, setCart } from "@/app/cart/cartStorage";
+import { cartUpdatedAtMs, getCart, mergeCarts, setCart } from "@/app/cart/cartStorage";
 import type { SafeUser } from "@/lib/auth";
 import type { DrawSummaryPublic } from "@/lib/draws";
 
@@ -34,7 +33,6 @@ type Category = {
 
 type ResultRow = {
   name: string;
-  result: string;
 };
 
 type Testimonial = {
@@ -96,7 +94,8 @@ const copy: Record<Language, CopyPack> = {
     countdownTitle: "Next Mega Draw",
     nextDrawAt: "Next draw at",
     footerTitle: "Fast UPI checkout and live lottery results",
-    footerDescription: "",
+    footerDescription:
+      "Pay with UPI in seconds and follow draws, tickets, and results in one clear place.",
     footerButton: "Create Account",
     buyTicket: "Buy Ticket",
     testimonialTitle: "Real wins, real stories",
@@ -152,10 +151,10 @@ const copy: Record<Language, CopyPack> = {
       { title: "Refer & Earn", subtitle: "Bonus rewards" },
     ],
     resultRows: [
-      { name: "Kuber Ratna", result: "49L 27278" },
-      { name: "Shri Samridhi", result: "15K 10342" },
-      { name: "Riddhi Siddhi", result: "07M 44129" },
-      { name: "Dhan Laxmi Special", result: "82R 55104" },
+      { name: "Kuber Ratna" },
+      { name: "Shri Samridhi" },
+      { name: "Riddhi Siddhi" },
+      { name: "Dhan Laxmi Special" },
     ],
   },
   hi: {
@@ -232,10 +231,10 @@ const copy: Record<Language, CopyPack> = {
       { title: "रेफर एंड अर्न", subtitle: "बोनस रिवॉर्ड" },
     ],
     resultRows: [
-      { name: "कुबेर रत्न", result: "49L 27278" },
-      { name: "श्री समृद्धि", result: "15K 10342" },
-      { name: "रिद्धि सिद्धि", result: "07M 44129" },
-      { name: "धन लक्ष्मी स्पेशल", result: "82R 55104" },
+      { name: "कुबेर रत्न" },
+      { name: "श्री समृद्धि" },
+      { name: "रिद्धि सिद्धि" },
+      { name: "धन लक्ष्मी स्पेशल" },
     ],
   },
 };
@@ -267,6 +266,21 @@ function formatWinnerName(fileName: string): string {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function hashString(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
+/** Deterministic sample ticket id for marketing / results list (matches sl-a-10001 style). */
+function formatSampleTicket(seed: string): string {
+  const series = ["a", "b", "c", "d", "e"][hashString(seed) % 5];
+  const n = 10000 + (hashString(`${seed}:n`) % 90000);
+  return `sl-${series}-${n}`;
 }
 
 function WinnerCard({
@@ -340,7 +354,7 @@ function WinnerCard({
   return (
     <motion.article whileHover={{ y: -6 }} transition={{ duration: 0.18 }} onPointerEnter={onBurst}>
       <div className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${gradientClass} p-[1px] shadow-lg shadow-black/35`}>
-        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0f0a0c]/90 p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
+        <div className="sl-winner-card-face relative overflow-hidden rounded-3xl border border-white/10 bg-[#0f0a0c]/90 p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
           <canvas
             ref={canvasRef}
             className="pointer-events-none absolute inset-0 z-[2] h-full w-full"
@@ -352,20 +366,18 @@ function WinnerCard({
             <div className="absolute -bottom-12 -left-12 h-36 w-36 rounded-full bg-white/5 blur-2xl" />
           </div>
 
-          <div className="relative z-[4]">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
-                  Winner
-                </p>
-                <p className="mt-1 text-base font-semibold text-white">{winnerName}</p>
-              </div>
-              <span className="inline-flex max-w-[46%] items-center justify-center rounded-full border border-amber-200/20 bg-amber-300/10 px-2.5 py-1 text-[11px] font-bold leading-none text-amber-200 sm:max-w-none sm:px-3 sm:text-xs whitespace-nowrap">
-                Won {amount}
-              </span>
-            </div>
+          <div className="relative z-[4] flex flex-col items-center text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+              Winner
+            </p>
+            <span className="mt-2 inline-flex items-center justify-center rounded-full border border-amber-200/20 bg-amber-300/10 px-3 py-1 text-[11px] font-bold leading-none text-amber-200 sm:text-xs">
+              Won {amount}
+            </span>
+            <p className="mt-3 max-w-[15rem] text-base font-semibold leading-snug text-white sm:max-w-none">
+              {winnerName}
+            </p>
 
-            <div className="mt-5 flex items-center justify-center">
+            <div className="mt-5 flex w-full items-center justify-center">
               <div className="relative h-28 w-28 overflow-hidden rounded-full border border-white/15 bg-white/5 shadow-[0_0_0_6px_rgba(251,191,36,0.06)]">
                 <Image
                   src={`/winner_image/${imageName}`}
@@ -548,9 +560,11 @@ function Counter({ label, value, suffix, compact }: Stat & { compact?: boolean }
 
 function TimeBox({ value, label }: { value: string; label: string }) {
   return (
-    <div className="flex min-w-16 flex-col items-center rounded-xl border border-white/15 bg-black/30 px-3 py-2">
-      <span className="text-xl font-bold text-amber-200">{value}</span>
-      <span className="text-[10px] uppercase tracking-[0.12em] text-zinc-200/80">
+    <div className="sl-time-box flex min-w-0 flex-1 flex-col items-center rounded-xl border border-amber-500/25 bg-gradient-to-b from-white/[0.09] to-black/40 px-2 py-2 shadow-[inset_0_1px_0_rgba(253,230,138,0.12)] sm:px-3">
+      <span className="sl-time-value text-lg font-bold tabular-nums text-amber-300 sm:text-xl">
+        {value}
+      </span>
+      <span className="sl-time-label mt-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-amber-200/50 sm:text-[10px]">
         {label}
       </span>
     </div>
@@ -635,7 +649,7 @@ function RightInsightColumn({
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
-      className="royal-panel flex w-full min-w-0 flex-col gap-3 rounded-[24px] border border-white/10 bg-[#140912] p-4 sm:gap-3.5 sm:rounded-[28px] sm:p-4"
+      className="royal-panel sl-insight-column flex w-full min-w-0 flex-col gap-3 rounded-[24px] border border-white/10 bg-[#140912] p-4 sm:gap-3.5 sm:rounded-[28px] sm:p-4"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-amber-300/15 bg-[radial-gradient(circle_at_top,rgba(255,191,36,0.08),transparent_50%),#1a0f14]">
         <Image
@@ -722,8 +736,8 @@ function RightInsightColumn({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-cyan-300/10 bg-[#0f1626] px-3 py-3.5 sm:px-4 sm:py-4">
-        <p className="text-[10px] uppercase tracking-[0.14em] text-cyan-200/80 sm:text-xs">
+      <div className="sl-mega-countdown rounded-2xl border border-amber-400/25 bg-gradient-to-br from-[#2a1810] via-[#1a0f0e] to-[#0f0908] px-3 py-3.5 shadow-[inset_0_1px_0_rgba(251,191,36,0.12)] sm:px-4 sm:py-4">
+        <p className="sl-countdown-kicker text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-200/90 sm:text-xs">
           {currentCopy.countdownTitle}
         </p>
         <div className="mt-2 flex gap-1.5 sm:gap-2">
@@ -731,7 +745,7 @@ function RightInsightColumn({
           <TimeBox value={countdown.minutes} label={currentCopy.mins} />
           <TimeBox value={countdown.seconds} label={currentCopy.secs} />
         </div>
-        <p className="mt-2 text-[10px] text-zinc-400 sm:text-xs">
+        <p className="sl-countdown-foot mt-2 text-[10px] text-amber-100/75 sm:text-xs">
           {currentCopy.nextDrawAt} {formatDrawTime(nextDraw)}
         </p>
       </div>
@@ -823,7 +837,8 @@ export default function Home() {
     return () => { cancelled = true; };
   }, []);
 
-  // Load server cart after login and merge with local cart
+  // Hydrate from server after login — do not merge a *stale* remote cart over a newer local one
+  // (e.g. user cleared cart on /cart then navigates home before PUT debounce finished).
   useEffect(() => {
     if (!authUser) return;
     let cancelled = false;
@@ -832,7 +847,25 @@ export default function Home() {
       .then(({ ok, data }) => {
         if (cancelled || !ok || !data.cart) return;
         const remote = data.cart as ReturnType<typeof getCart>;
-        const merged = mergeCarts(getCart(), remote);
+        const local = getCart();
+        const localTs = cartUpdatedAtMs(local);
+        const remoteTs = cartUpdatedAtMs(remote);
+
+        if (localTs > remoteTs) {
+          void fetch("/api/cart", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cart: local }),
+          });
+          return;
+        }
+
+        if (remoteTs > localTs) {
+          setCart(remote);
+          return;
+        }
+
+        const merged = mergeCarts(local, remote);
         setCart(merged);
         void fetch("/api/cart", {
           method: "PUT",
@@ -858,7 +891,7 @@ export default function Home() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ cart: getCart() }),
         });
-      }, 300);
+      }, 120);
     };
     window.addEventListener("subhlaxmi_cart_updated", handler);
     return () => {
@@ -949,89 +982,19 @@ export default function Home() {
       <FrameOverlay />
 
       <main className="relative h-screen overflow-hidden">
-        <div className="flex h-full flex-col bg-[#17060d]/90 backdrop-blur-xl">
-          <header className="sticky top-0 z-20 border-b border-amber-500/20 bg-[#17060d]/95 backdrop-blur-xl">
-            <div className="mx-auto flex w-full max-w-[1800px] flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6 sm:py-6 lg:px-12">
-              <div className="flex items-center gap-6">
-                <div className="flex flex-col leading-none">
-                  <p className="text-lg font-semibold uppercase tracking-[0.18em] text-amber-300">
-                    {currentCopy.heroTitle}
-                  </p>
-                  <p className="mt-1 text-[10px] font-semibold uppercase text-zinc-300/80">
-                    Government Lottery
-                  </p>
-                </div>
-
-                <nav className="hidden items-center gap-2 text-xs font-semibold text-zinc-200 lg:flex">
-                  {currentCopy.menu.map((item, index) => (
-                    <a
-                      key={item}
-                      href="#"
-                      className={`rounded-full px-3 py-2 transition ${
-                        index === 0 ? "bg-white/10 text-white" : "text-zinc-300 hover:bg-white/5 hover:text-white"
-                      }`}
-                    >
-                      {item}
-                    </a>
-                  ))}
-                </nav>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm">
-                <div className="rounded-full border border-white/15 bg-black/20 p-1">
-                  <button
-                    onClick={() => setLanguage("en")}
-                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                      language === "en" ? "bg-white text-zinc-900" : "text-zinc-200"
-                    }`}
-                  >
-                    EN
-                  </button>
-                  <button
-                    onClick={() => setLanguage("hi")}
-                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                      language === "hi" ? "bg-white text-zinc-900" : "text-zinc-200"
-                    }`}
-                  >
-                    हिं
-                  </button>
-                </div>
-                <CartNavButton />
-                <ThemeToggle />
-                {authUser ? (
-                  <button
-                    type="button"
-                    onClick={() => setProfileOpen(true)}
-                    className="flex items-center gap-2 rounded-full border border-amber-200/20 bg-white/8 px-3 py-2 text-zinc-100 transition hover:border-amber-200/40"
-                  >
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-orange-500 text-xs font-bold text-[#2d1400]">
-                      {authUser.name.slice(0, 1).toUpperCase()}
-                    </span>
-                    <span className="hidden max-w-28 truncate text-xs font-semibold sm:inline">
-                      {authUser.name}
-                    </span>
-                  </button>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => openAuth("signin")}
-                      className="rounded-full border border-white/15 px-4 py-2 text-zinc-100 transition hover:border-white/30"
-                    >
-                      {currentCopy.signIn}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openAuth("register")}
-                      className="rounded-full bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 px-4 py-2 font-semibold text-[#2d1400] transition hover:scale-[1.03]"
-                    >
-                      {currentCopy.register}
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </header>
+          <div className="flex h-full flex-col bg-[#17060d]/90 backdrop-blur-xl">
+          <HeaderBar
+            heroTitle={currentCopy.heroTitle}
+            menu={currentCopy.menu}
+            signIn={currentCopy.signIn}
+            register={currentCopy.register}
+            language={language}
+            onLanguageChange={setLanguage}
+            authUser={authUser}
+            onSignIn={() => openAuth("signin")}
+            onRegister={() => openAuth("register")}
+            onProfileClick={() => setProfileOpen(true)}
+          />
 
           <div className="mx-auto w-full max-w-[1800px] min-h-0 flex-1 px-4 pb-4 md:px-5 md:pb-5 lg:px-6 lg:pb-6">
             <section className="hide-scrollbar h-full overflow-y-auto p-5 md:p-7">
@@ -1041,7 +1004,7 @@ export default function Home() {
                     initial={{ opacity: 0, y: 24 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.35, ease: "easeOut" }}
-                    className="royal-panel royal-panel-strong relative w-full overflow-hidden rounded-[24px] border border-white/10 bg-transparent px-5 pb-3 pt-5 sm:rounded-[28px] sm:px-6 sm:pt-6"
+                    className="royal-panel royal-panel-strong sl-hero-outline relative w-full overflow-hidden rounded-[24px] border-2 border-amber-500/35 bg-transparent px-5 pb-3 pt-5 sm:rounded-[28px] sm:px-6 sm:pt-6"
                   >
                     <PanelCorners />
                     <div className="relative flex w-full flex-col items-center gap-4">
@@ -1052,7 +1015,7 @@ export default function Home() {
                       </div>
 
                       <div className="w-full max-w-4xl text-center">
-                        <p className="mx-auto mt-4 max-w-3xl text-sm leading-7 text-orange-50/90 md:text-base">
+                        <p className="mx-auto mt-4 max-w-3xl text-sm font-medium leading-7 text-[var(--foreground)] opacity-[0.92] md:text-base">
                           {currentCopy.heroDescription}
                         </p>
                       </div>
@@ -1098,17 +1061,17 @@ export default function Home() {
                             className={`group self-start rounded-3xl bg-gradient-to-r p-[2px] ${accent} transition`}
                           >
                             <div className="flex flex-col overflow-hidden rounded-[22px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]">
-                              <div className="flex flex-col bg-[#120b0f] p-3 transition-[border-radius] duration-300 ease-out sm:p-4 rounded-[22px] group-hover:rounded-t-[22px] group-hover:rounded-b-[14px]">
-                                <div className="flex items-start justify-between gap-2 sm:gap-3">
-                                  <div className="min-w-0 flex-1">
-                                    <p className="text-[11px] font-semibold leading-snug text-zinc-100 sm:text-xs md:text-sm">
+                            <div className="sl-popular-draw-card flex flex-col bg-[#120b0f] p-3 transition-[border-radius] duration-300 ease-out sm:p-4 rounded-[22px] group-hover:rounded-t-[22px] group-hover:rounded-b-[14px]">
+                              <div className="flex items-start justify-between gap-2 sm:gap-3">
+                                <div className="min-w-0 flex-1">
+                                    <p className="sl-ticket-draw-name text-[11px] font-semibold leading-snug sm:text-xs md:text-sm">
                                       {ticket.name}
                                     </p>
                                     <p className="mt-1 text-base font-bold leading-tight text-amber-300 sm:text-lg md:text-xl">
                                       {ticket.prize}
                                     </p>
                                   </div>
-                                  <div className="max-w-[48%] shrink-0 rounded-xl bg-white/10 px-2 py-1.5 text-right text-[9px] leading-tight text-zinc-100 sm:rounded-2xl sm:px-2.5 sm:py-2 sm:text-[10px] md:text-xs">
+                                  <div className="sl-ticket-draw-time-pill max-w-[48%] shrink-0 rounded-xl bg-white/10 px-2 py-1.5 text-right text-[9px] leading-tight text-zinc-100 sm:rounded-2xl sm:px-2.5 sm:py-2 sm:text-[10px] md:text-xs">
                                     {ticket.time}
                                   </div>
                                 </div>
@@ -1122,7 +1085,7 @@ export default function Home() {
                                     </div>
                                     <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full border border-emerald-200/15 bg-gradient-to-r from-emerald-950/70 via-amber-950/50 to-red-950/60 shadow-inner shadow-black/30">
                                       <div
-                                        className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-lime-300 to-green-500 shadow-[0_0_12px_rgba(74,222,128,0.45)]"
+                                        className="sl-progress-fill h-full rounded-full"
                                         style={{ width: `${pctLeft}%` }}
                                       />
                                     </div>
@@ -1155,7 +1118,7 @@ export default function Home() {
                     nextDraw={nextDraw}
                   />
 
-                  <section className="royal-panel min-w-0 rounded-[24px] border border-white/10 bg-[#14070f] p-4 sm:rounded-[28px] sm:p-5">
+                  <section className="sl-live-results-board royal-panel min-w-0 rounded-[24px] border border-white/10 bg-[#14070f] p-4 sm:rounded-[28px] sm:p-5">
                     <h2 className="text-lg font-semibold sm:text-xl">{currentCopy.liveResultsTitle}</h2>
                     <div className="mt-3 space-y-2 sm:mt-4 sm:space-y-3">
                       {currentCopy.resultRows.map((row) => (
@@ -1163,11 +1126,13 @@ export default function Home() {
                           key={row.name}
                           whileHover={{ x: 3 }}
                           transition={{ duration: 0.16 }}
-                          className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-2.5 sm:py-3"
+                          className="sl-live-result-row flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-2.5 sm:py-3"
                         >
-                          <span className="text-sm text-zinc-200">{row.name}</span>
-                          <span className="rounded-full bg-amber-300/12 px-3 py-1 text-xs font-semibold text-amber-200">
-                            {row.result}
+                          <span className="sl-live-result-label text-sm font-medium text-zinc-200">
+                            {row.name}
+                          </span>
+                          <span className="sl-ticket-pill rounded-full px-3 py-1 font-mono text-xs font-semibold tabular-nums shadow-sm">
+                            {formatSampleTicket(row.name)}
                           </span>
                         </motion.div>
                       ))}
@@ -1177,16 +1142,16 @@ export default function Home() {
                   <motion.section
                     whileHover={{ y: -3 }}
                     transition={{ duration: 0.18 }}
-                    className="royal-panel rounded-[24px] border border-orange-300/15 bg-gradient-to-r from-[#582313] via-[#8a2b13] to-[#d37b13] p-4 sm:rounded-[28px] sm:p-5"
+                    className="royal-panel sl-upi-promo rounded-[24px] border border-orange-300/15 bg-gradient-to-r from-[#582313] via-[#8a2b13] to-[#d37b13] p-4 sm:rounded-[28px] sm:p-5"
                   >
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-orange-100/85 sm:text-xs">
+                    <p className="sl-upi-kicker text-[11px] uppercase tracking-[0.18em] text-orange-100/85 sm:text-xs">
                       UPI • Instant results
                     </p>
-                    <h2 className="mt-2 max-w-lg text-xl font-semibold leading-snug sm:mt-3 sm:text-2xl">
+                    <h2 className="sl-upi-title mt-2 max-w-lg text-xl font-semibold leading-snug sm:mt-3 sm:text-2xl">
                       {currentCopy.footerTitle}
                     </h2>
                     {currentCopy.footerDescription ? (
-                      <p className="mt-2 max-w-xl text-xs leading-6 text-orange-50/90 sm:text-sm sm:leading-7">
+                      <p className="sl-upi-body mt-2 max-w-xl text-xs leading-6 text-orange-50/90 sm:text-sm sm:leading-7">
                         {currentCopy.footerDescription}
                       </p>
                     ) : null}
@@ -1197,7 +1162,7 @@ export default function Home() {
                         else if (liveDraws.length) openTicketModal(liveDraws[0]);
                         else setProfileOpen(true);
                       }}
-                      className="mt-4 rounded-full bg-[#180808] px-5 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.03] sm:mt-5"
+                      className="sl-force-light-text mt-4 rounded-full border border-white/10 bg-[#180808] px-5 py-2.5 text-sm font-semibold transition hover:scale-[1.03] sm:mt-5"
                     >
                       {currentCopy.footerButton}
                     </button>
@@ -1205,7 +1170,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <section className="royal-panel mt-4 overflow-hidden rounded-[28px] border border-white/10 bg-[#14070f] p-5 sm:mt-5">
+              <section className="royal-panel sl-winners-section mt-4 overflow-hidden rounded-[28px] border border-white/10 bg-[#14070f] p-5 sm:mt-5">
                 <div className="pointer-events-none absolute inset-0 opacity-60">
                   <div className="absolute left-[-6rem] top-[-6rem] h-72 w-72 rounded-full bg-amber-300/10 blur-3xl" />
                   <div className="absolute right-[-7rem] bottom-[-7rem] h-80 w-80 rounded-full bg-orange-500/10 blur-3xl" />
@@ -1213,7 +1178,7 @@ export default function Home() {
 
                 <div className="relative mb-4 flex flex-wrap items-end justify-between gap-3">
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-amber-200/70">
+                    <p className="sl-winners-kicker text-[10px] font-semibold uppercase tracking-[0.22em] text-amber-200/70">
                       Trusted results
                     </p>
                     <h2 className="mt-2 text-xl font-semibold">Celebrating Our Winners</h2>

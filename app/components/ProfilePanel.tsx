@@ -101,7 +101,7 @@ export function ProfilePanel({ open, user, onClose, onUserUpdated }: Props) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-sm"
+          className="sl-profile-overlay fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
         >
@@ -110,7 +110,7 @@ export function ProfilePanel({ open, user, onClose, onUserUpdated }: Props) {
             animate={{ x: 0 }}
             exit={{ x: 420 }}
             transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            className="royal-panel flex h-full w-full max-w-md flex-col border-l border-amber-200/15 bg-[#14070f] p-5 shadow-2xl shadow-black/40 sm:p-6"
+            className="sl-profile-panel royal-panel flex h-full w-full max-w-md flex-col border-l border-amber-200/15 bg-[#14070f] p-5 shadow-2xl shadow-black/40 sm:p-6"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -121,7 +121,7 @@ export function ProfilePanel({ open, user, onClose, onUserUpdated }: Props) {
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300 transition hover:border-white/25 hover:text-white"
+                className="sl-profile-close rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300 transition hover:border-white/25 hover:text-white"
               >
                 Close
               </button>
@@ -230,7 +230,7 @@ export function ProfilePanel({ open, user, onClose, onUserUpdated }: Props) {
               type="button"
               onClick={signOut}
               disabled={saving}
-              className="mt-4 w-full cursor-pointer rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-zinc-100 transition hover:border-white/30 disabled:opacity-60"
+              className="sl-profile-signout mt-4 w-full cursor-pointer rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-zinc-100 transition hover:border-white/30 disabled:opacity-60"
             >
               Sign Out
             </button>

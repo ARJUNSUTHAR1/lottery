@@ -107,3 +107,9 @@ export function removeDraw(drawId: string) {
   setCart({ items, updatedAt: new Date().toISOString() });
 }
 
+/** Milliseconds for comparing which cart snapshot is newer (client vs server). */
+export function cartUpdatedAtMs(cart: CartState): number {
+  const t = Date.parse(cart.updatedAt);
+  return Number.isFinite(t) ? t : 0;
+}
+

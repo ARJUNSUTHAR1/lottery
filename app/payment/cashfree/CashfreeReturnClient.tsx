@@ -67,7 +67,7 @@ export function CashfreeReturnClient() {
           <button
             type="button"
             onClick={() => router.push("/cart")}
-            className="mt-5 w-full rounded-full bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 py-3 text-sm font-bold text-[#2d1400]"
+            className="mt-5 w-full rounded-full sl-cta-gradient py-3 text-sm font-bold sl-force-light-text"
           >
             Back to Cart
           </button>

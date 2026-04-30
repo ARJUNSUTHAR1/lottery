@@ -282,7 +282,7 @@ function AuthModalBody({
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-full bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 px-5 py-3 text-sm font-bold text-[#2d1400] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-full sl-cta-gradient px-5 py-3 text-sm font-bold sl-force-light-text transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading
                   ? "Please wait..."

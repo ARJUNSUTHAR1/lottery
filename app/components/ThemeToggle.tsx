@@ -30,8 +30,9 @@ export function ThemeToggle() {
 
   return (
     <button
+      type="button"
       onClick={toggleTheme}
-      className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 border border-white/20 theme-toggle-btn"
+      className="theme-toggle-btn flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 transition-all duration-200 hover:bg-white/20"
       aria-label="Toggle theme"
     >
       {theme === 'dark' ? (

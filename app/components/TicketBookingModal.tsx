@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import type { DrawPublic, SeriesStats, TicketPublic } from "@/lib/draws";
 import { addToCart } from "@/app/cart/cartStorage";
 
@@ -186,6 +187,9 @@ export function TicketBookingModal({
       pricePerTicket: draw.pricePerTicket,
       ticketNumbers: selectedNumbers,
     });
+    toast.success("Added to cart", {
+      description: `${selectedNumbers.length} ticket(s) · ${draw.name}`,
+    });
     setBookingState("success");
     setBookingError("");
     onClose();
@@ -205,6 +209,9 @@ export function TicketBookingModal({
       drawTime: draw.drawTime,
       pricePerTicket: draw.pricePerTicket,
       ticketNumbers: selectedNumbers,
+    });
+    toast.success("Added to cart", {
+      description: `${selectedNumbers.length} ticket(s) — opening checkout`,
     });
     router.push("/cart");
   };
@@ -232,7 +239,7 @@ export function TicketBookingModal({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 380, damping: 42 }}
-            className="absolute inset-x-0 bottom-0 top-0 flex flex-col bg-[#0d0809] md:top-4 md:left-4 md:right-4 md:rounded-[28px] md:top-[2vh]"
+            className="ticket-booking-modal absolute inset-x-0 bottom-0 top-0 flex flex-col bg-[#0d0809] md:top-4 md:left-4 md:right-4 md:rounded-[28px] md:top-[2vh]"
           >
             {/* ── Header ────────────────────────────────────────────────── */}
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-amber-200/10 bg-[#110b0d] px-4 py-3 sm:px-5 sm:py-4 md:rounded-t-[28px]">
@@ -251,7 +258,7 @@ export function TicketBookingModal({
                     </div>
                     <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full border border-white/10 bg-white/5">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500"
+                        className="sl-progress-fill h-full rounded-full"
                         style={{ width: `${pctLeft}%` }}
                       />
                     </div>
@@ -276,7 +283,7 @@ export function TicketBookingModal({
                     <span className="text-white">{draw.drawTime}</span>
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 rounded-xl border border-amber-300/40 bg-amber-300/10 px-3 py-2">
+                <div className="sl-price-chip flex items-center gap-1.5 rounded-xl border border-amber-300/40 bg-amber-300/10 px-3 py-2">
                   <span className="text-xs font-semibold text-amber-200">₹</span>
                   <span className="text-lg font-bold text-amber-300">{draw.pricePerTicket}</span>
                 </div>
@@ -462,7 +469,7 @@ export function TicketBookingModal({
                         type="button"
                         disabled={selectedCount >= 100}
                         onClick={() => quickPick(amt)}
-                        className="cursor-pointer rounded-lg border border-amber-200/20 bg-amber-300/8 px-3 py-1.5 text-xs font-bold text-amber-200 transition hover:border-amber-300/50 hover:bg-amber-300/15 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="sl-quick-pick cursor-pointer rounded-lg border border-amber-200/20 bg-amber-300/8 px-3 py-1.5 text-xs font-bold text-amber-200 transition hover:border-amber-300/50 hover:bg-amber-300/15 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         {amt}
                       </button>
@@ -544,7 +551,7 @@ export function TicketBookingModal({
                         ₹{selectedCount > 0 ? (gstAmount * selectedCount).toFixed(2) : 0}
                       </span>
                     </div>
-                    <div className="flex justify-between border-t border-white/10 pt-2 text-sm font-bold text-amber-300">
+                    <div className="sl-sidebar-total-row flex justify-between border-t border-white/10 pt-2 text-sm font-bold text-amber-300">
                       <span>Total</span>
                       <span>₹{grandTotal > 0 ? grandTotal.toFixed(2) : 0}</span>
                     </div>
@@ -572,7 +579,7 @@ export function TicketBookingModal({
                       type="button"
                       onClick={handleAddToCart}
                       disabled={!selectedCount}
-                      className="rounded-full border border-white/12 bg-white/8 py-3 text-sm font-bold text-zinc-100 transition hover:border-white/25 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="sl-modal-secondary-btn rounded-full border border-white/12 bg-white/8 py-3 text-sm font-bold text-zinc-100 transition hover:border-white/25 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Add to Cart
                     </button>
@@ -586,7 +593,7 @@ export function TicketBookingModal({
                     }
                     whileHover={selectedCount > 0 ? { scale: 1.02 } : {}}
                     transition={{ duration: 0.14 }}
-                    className="w-full rounded-full bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 py-3 text-sm font-bold text-[#2d1400] transition disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full rounded-full sl-cta-gradient sl-force-light-text py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {bookingState === "booking"
                       ? "Loading…"
@@ -631,7 +638,7 @@ export function TicketBookingModal({
                       type="button"
                       onClick={handleAddToCart}
                       disabled={bookingState === "booking"}
-                      className="rounded-full border border-white/12 bg-white/8 px-4 py-2.5 text-sm font-bold text-zinc-100 transition disabled:opacity-50"
+                      className="sl-modal-secondary-btn rounded-full border border-white/12 bg-white/8 px-4 py-2.5 text-sm font-bold text-zinc-100 transition disabled:opacity-50"
                     >
                       {bookingState === "booking" ? "Loading…" : "Add"}
                     </button>
@@ -639,7 +646,7 @@ export function TicketBookingModal({
                       type="button"
                       onClick={handleBuyNow}
                       disabled={bookingState === "booking"}
-                      className="rounded-full bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 px-5 py-2.5 text-sm font-bold text-[#2d1400] transition disabled:opacity-50"
+                      className="rounded-full sl-cta-gradient sl-force-light-text px-5 py-2.5 text-sm font-bold transition disabled:opacity-50"
                     >
                       {bookingState === "booking" ? "Loading…" : "Buy Now"}
                     </button>
@@ -673,15 +680,19 @@ function TicketButton({
 }) {
   const isSold = ticket.status === "sold";
 
+  const displayNum = (ticket.number || "—").trim().toLowerCase();
+
   let base =
-    "relative w-full rounded-lg border py-2.5 text-center font-mono text-[11px] font-semibold tracking-wide transition select-none sm:text-xs";
+    "relative w-full min-h-[2.5rem] rounded-lg border px-1 py-2 text-center font-mono text-[10px] font-semibold tabular-nums leading-tight transition select-none sm:min-h-[2.75rem] sm:text-[11px]";
 
   if (isSold) {
     base += " border-zinc-700/30 bg-zinc-900/40 text-zinc-700 cursor-not-allowed line-through";
   } else if (isSelected) {
-    base += " border-amber-300 bg-amber-300/20 text-amber-100 shadow-[0_0_12px_rgba(251,191,36,0.2)]";
+    base +=
+      " sl-ticket-selected border-amber-500 bg-gradient-to-b from-[#3a2518] to-[#140c09] text-amber-100 shadow-[0_0_0_1px_rgba(251,146,60,0.45),0_6px_20px_rgba(0,0,0,0.35)]";
   } else if (ticket.category === "lp_special") {
-    base += " border-cyan-400/30 bg-cyan-900/20 text-cyan-200 hover:border-cyan-300/60 hover:bg-cyan-300/10 cursor-pointer";
+    base +=
+      " sl-ticket-lp border-cyan-400/30 bg-cyan-900/20 text-cyan-200 hover:border-cyan-300/60 hover:bg-cyan-300/10 cursor-pointer";
   } else if (ticket.category === "special") {
     base += " border-purple-400/30 bg-purple-900/20 text-purple-200 hover:border-purple-300/60 hover:bg-purple-300/10 cursor-pointer";
   } else {
@@ -696,10 +707,11 @@ function TicketButton({
       whileTap={!isSold ? { scale: 0.94 } : {}}
       transition={{ duration: 0.08 }}
     >
-      <span className="hidden sm:inline">{ticket.number}</span>
-      <span className="sm:hidden">{ticket.number.replace(/^SL-[A-Z]-/, "")}</span>
+      <span className="block max-w-full truncate" title={displayNum}>
+        {displayNum}
+      </span>
       {ticket.category === "lp_special" && (
-        <span className="absolute right-0.5 top-0.5 rounded-sm bg-cyan-400/30 px-0.5 text-[8px] text-cyan-300">
+        <span className="sl-ticket-lp-badge absolute right-0.5 top-0.5 rounded-sm bg-cyan-400/30 px-0.5 text-[8px] text-cyan-300">
           LP
         </span>
       )}

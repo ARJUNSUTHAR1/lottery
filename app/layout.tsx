@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AppToaster } from "@/app/components/AppToaster";
+import { ThemeSync } from "@/app/components/ThemeSync";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -80,24 +82,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-(function () {
-  try {
-    var stored = localStorage.getItem("theme");
-    var theme = stored === "light" ? "light" : "dark";
-    document.documentElement.dataset.theme = theme;
-  } catch (e) {}
-})();`,
-          }}
-        />
-      </head>
-      <body suppressHydrationWarning className="min-h-full flex flex-col">
+      <body className="flex min-h-full flex-col">
+        <ThemeSync />
+        <AppToaster />
         {children}
       </body>
     </html>
